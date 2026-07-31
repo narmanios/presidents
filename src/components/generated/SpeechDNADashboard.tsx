@@ -584,6 +584,7 @@ export function SpeechDNADashboard() {
     x: number;
     y: number;
   } | null>(null);
+  const [dropdownSlot, setDropdownSlot] = useState<number | null>(null);
 
   const active = activeIds.map(id => ALL_SPEECHES_MAP[id]).filter(Boolean);
   const visibleLibrary = useMemo(
@@ -749,19 +750,64 @@ export function SpeechDNADashboard() {
       <section className="mx-auto grid max-w-[1500px] grid-cols-1 gap-5 px-5 py-5 sm:grid-cols-2 sm:px-8 xl:grid-cols-4">
         {[0, 1, 2, 3].map(slot => {
           const speech = active[slot];
-          if (!speech)
-            return (
-              <button
-                key={`empty-${slot}`}
-                onClick={() => setExpanded(true)}
-                className="flex min-h-[585px] items-center justify-center rounded-3xl border border-dashed border-white/15 text-xs text-slate-500 transition hover:border-blue-400 hover:text-blue-300"
-              >
-                <span>
-                  <Plus size={22} className="mx-auto mb-2" />
-                  <span>ADD SPEECH</span>
-                </span>
-              </button>
+          if (!speech) {
+            const isDropdownOpen = dropdownSlot === slot;
+            const availableSpeeches = libraryMeta.filter(
+              m => !activeIds.includes(m[0])
             );
+            
+            return (
+              <div
+                key={`empty-${slot}`}
+                className="relative flex min-h-[585px] items-center justify-center rounded-3xl border border-dashed border-white/15 text-xs text-slate-500"
+              >
+                {!isDropdownOpen ? (
+                  <button
+                    onClick={() => setDropdownSlot(slot)}
+                    className="w-full h-full flex items-center justify-center transition hover:border-blue-400 hover:text-blue-300"
+                  >
+                    <span>
+                      <Plus size={22} className="mx-auto mb-2" />
+                      <span>ADD SPEECH</span>
+                    </span>
+                  </button>
+                ) : (
+                  <div className="absolute inset-0 rounded-3xl border border-blue-400/50 bg-white/[.08] p-4 flex flex-col">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-bold text-slate-300">Select Speech</span>
+                      <button
+                        onClick={() => setDropdownSlot(null)}
+                        className="rounded-lg p-1 text-slate-400 hover:bg-white/10 hover:text-white"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto space-y-1">
+                      {availableSpeeches.map(m => (
+                        <button
+                          key={m[0]}
+                          onClick={() => {
+                            if (activeIds.length < 4) {
+                              setActiveIds([...activeIds, m[0]]);
+                              setDropdownSlot(null);
+                            }
+                          }}
+                          className="w-full text-left rounded-lg border border-white/5 bg-black/10 p-2 transition hover:border-white/20 hover:bg-white/10"
+                        >
+                          <span className="block text-[10px] font-bold" style={{ color: m[6] }}>
+                            {m[2]}
+                          </span>
+                          <span className="text-[9px] text-slate-500">
+                            {m[3]} · {m[5]}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          }
 
           return (
             <article
