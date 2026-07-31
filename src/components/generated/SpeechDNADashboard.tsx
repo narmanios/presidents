@@ -619,29 +619,6 @@ export function SpeechDNADashboard() {
             <span>THEME DETECTION · LIVE</span>
           </div> */}
         </div>
-        <nav aria-label="Global theme filter" className="mt-8 flex flex-wrap gap-2">
-          <button
-            onClick={() => setFilters([])}
-            className={`rounded-full border px-3 py-2 text-[10px] font-bold tracking-wider transition ${filters.length === 0 ? 'border-white/30 bg-white text-slate-900' : 'border-white/10 bg-white/[.04] text-slate-400 hover:bg-white/10'}`}
-          >
-            ALL
-          </button>
-          {THEMES.map(t => (
-            <button
-              key={t.id}
-              onClick={() => toggleTheme(t.id)}
-              title={t.label}
-              className="rounded-full border px-3 py-2 text-[10px] font-bold tracking-wider transition hover:-translate-y-0.5"
-              style={{
-                borderColor: filters.includes(t.id) ? t.color : 'rgba(255,255,255,.1)',
-                backgroundColor: filters.includes(t.id) ? `${t.color}22` : 'rgba(255,255,255,.04)',
-                color: filters.includes(t.id) ? t.color : '#94a3b8',
-              }}
-            >
-              {t.short}
-            </button>
-          ))}
-        </nav>
       </header>
 
       <section className="mx-auto max-w-[1500px] px-5 sm:px-8">
@@ -735,6 +712,32 @@ export function SpeechDNADashboard() {
             </div>
           )}
         </div>
+      </section>
+
+      <section className="mx-auto max-w-[1500px] px-5 sm:px-8 mt-8">
+        <nav aria-label="Global theme filter" className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setFilters([])}
+            className={`rounded-full border px-3 py-2 text-[10px] font-bold tracking-wider transition ${filters.length === 0 ? 'border-white/30 bg-white text-slate-900' : 'border-white/10 bg-white/[.04] text-slate-400 hover:bg-white/10'}`}
+          >
+            ALL
+          </button>
+          {THEMES.map(t => (
+            <button
+              key={t.id}
+              onClick={() => toggleTheme(t.id)}
+              title={t.label}
+              className="rounded-full border px-3 py-2 text-[10px] font-bold tracking-wider transition hover:-translate-y-0.5"
+              style={{
+                borderColor: filters.includes(t.id) ? t.color : 'rgba(255,255,255,.1)',
+                backgroundColor: filters.includes(t.id) ? `${t.color}22` : 'rgba(255,255,255,.04)',
+                color: filters.includes(t.id) ? t.color : '#94a3b8',
+              }}
+            >
+              {t.short}
+            </button>
+          ))}
+        </nav>
       </section>
 
       <div className="mx-auto max-w-[1500px] px-5 sm:px-8 mt-8">
