@@ -672,8 +672,7 @@ export function SpeechDNADashboard() {
                     <button
                       key={m[0]}
                       onClick={() => {
-                        if (selected) setActiveIds(activeIds.filter(id => id !== m[0]));
-                        else if (activeIds.length < 4) setActiveIds([...activeIds, m[0]]);
+                        setExplore(ALL_SPEECHES_MAP[m[0]]);
                       }}
                       className={`rounded-lg border p-2 text-left transition ${selected ? 'border-white/30 bg-white/10' : 'border-white/5 bg-black/10 hover:border-white/20'}`}
                     >
@@ -684,12 +683,6 @@ export function SpeechDNADashboard() {
                     </button>
                   );
                 })}
-              </div>
-              <div className="mt-3 flex justify-between text-xs text-slate-500">
-                <span>
-                  Showing {visibleLibrary.length} of {libraryMeta.length} speeches
-                </span>
-                <span>{activeIds.length} of 4 selected</span>
               </div>
             </div>
           )}
@@ -789,7 +782,7 @@ export function SpeechDNADashboard() {
               <div className="flex items-start justify-between">
                 <div>
                   <div className="flex items-center gap-2">
-                    <h2 className="text-xl font-normal">{speech.president}</h2>
+                    <h2 className="text-xl font-medium">{speech.president}</h2>
                     <span className="text-sm text-slate-400">{speech.year}</span>
                   </div>
                   <p className="mt-1 text-sm text-slate-500">
