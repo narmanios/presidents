@@ -917,7 +917,7 @@ export function SpeechDNADashboard() {
                       <span
                         key={t.themeId}
                         title={`${theme?.label}: ${t.count} segments (${percentage.toFixed(1)}%)`}
-                        className="cursor-default"
+                        className="cursor-default transition-opacity hover:opacity-80"
                         style={{
                           width: `${Math.max(2, percentage)}%`,
                           backgroundColor: theme?.color,
@@ -933,7 +933,7 @@ export function SpeechDNADashboard() {
                     return otherCount > 0 ? (
                       <span
                         title={`Other: ${otherCount} segments (${otherPercentage.toFixed(1)}%)`}
-                        className="cursor-default"
+                        className="cursor-default transition-opacity hover:opacity-80"
                         style={{
                           width: `${otherPercentage}%`,
                           backgroundColor: '#475569',
@@ -1165,15 +1165,13 @@ export function SpeechDNADashboard() {
                       className="relative"
                       onMouseEnter={() => setParagraphHover(i)}
                       onMouseLeave={() => setParagraphHover(null)}
-                      onClick={(e) => {
-                        if (p.matchedThemes.length > 0) {
-                          const rect = e.currentTarget.getBoundingClientRect();
-                          setParagraphClicked({
-                            index: i,
-                            x: rect.left + rect.width / 2,
-                            y: rect.top + rect.height / 2,
-                          });
-                        }
+                      onClick={e => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setParagraphClicked({
+                          index: i,
+                          x: rect.left + rect.width / 2,
+                          y: rect.top + rect.height / 2,
+                        });
                       }}
                     >
                       <p
@@ -1184,21 +1182,31 @@ export function SpeechDNADashboard() {
                       >
                         {p.text}
                       </p>
-                      {paragraphHover === i && p.matchedThemes.length > 0 && (
+                      {paragraphHover === i && (
                         <div className="pointer-events-none absolute left-0 top-full z-10 mt-1 hidden rounded-md bg-slate-900 px-3 py-2 text-xs text-white shadow-lg sm:block">
                           <div className="flex flex-wrap gap-2">
-                            {p.matchedThemes.map(themeId => {
-                              const theme = THEMES.find(t => t.id === themeId);
-                              return (
-                                <span key={themeId} className="flex items-center gap-1">
-                                  <span
-                                    className="w-1.5 h-1.5 rounded-full"
-                                    style={{ backgroundColor: theme?.color }}
-                                  />
-                                  {theme?.label}
-                                </span>
-                              );
-                            })}
+                            {p.matchedThemes.length > 0 ? (
+                              p.matchedThemes.map(themeId => {
+                                const theme = THEMES.find(t => t.id === themeId);
+                                return (
+                                  <span key={themeId} className="flex items-center gap-1">
+                                    <span
+                                      className="w-1.5 h-1.5 rounded-full"
+                                      style={{ backgroundColor: theme?.color }}
+                                    />
+                                    {theme?.label}
+                                  </span>
+                                );
+                              })
+                            ) : (
+                              <span className="flex items-center gap-1">
+                                <span
+                                  className="w-1.5 h-1.5 rounded-full"
+                                  style={{ backgroundColor: '#475569' }}
+                                />
+                                Other
+                              </span>
+                            )}
                           </div>
                         </div>
                       )}
@@ -1237,18 +1245,28 @@ export function SpeechDNADashboard() {
               </button>
             </div>
             <div className="flex flex-wrap gap-2">
-              {explore.paragraphs[paragraphClicked.index]?.matchedThemes.map(themeId => {
-                const theme = THEMES.find(t => t.id === themeId);
-                return (
-                  <span key={themeId} className="flex items-center gap-1.5">
-                    <span
-                      className="w-1.5 h-1.5 rounded-full"
-                      style={{ backgroundColor: theme?.color }}
-                    />
-                    {theme?.label}
-                  </span>
-                );
-              })}
+              {explore.paragraphs[paragraphClicked.index]?.matchedThemes.length > 0 ? (
+                explore.paragraphs[paragraphClicked.index]?.matchedThemes.map(themeId => {
+                  const theme = THEMES.find(t => t.id === themeId);
+                  return (
+                    <span key={themeId} className="flex items-center gap-1.5">
+                      <span
+                        className="w-1.5 h-1.5 rounded-full"
+                        style={{ backgroundColor: theme?.color }}
+                      />
+                      {theme?.label}
+                    </span>
+                  );
+                })
+              ) : (
+                <span className="flex items-center gap-1.5">
+                  <span
+                    className="w-1.5 h-1.5 rounded-full"
+                    style={{ backgroundColor: '#475569' }}
+                  />
+                  Other
+                </span>
+              )}
             </div>
           </div>
         </>
