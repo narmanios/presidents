@@ -1348,10 +1348,11 @@ export function SpeechDNADashboard() {
                     .filter((s): s is AnalyzedSpeech => s !== null)
                     .map((s, idx) => {
                       const count = s.tallies.find(x => x.themeId === t.id)?.count ?? 0;
+                      const percentage = (count / Math.max(s.paragraphs.length, 1)) * 100;
                       return (
                         <div
                           key={s.presidentId}
-                          title={`${s.surname}: ${count}`}
+                          title={`${s.surname}: ${count} segments (${percentage.toFixed(1)}%)`}
                           className="w-full max-w-3 rounded-t-sm"
                           style={{
                             height: `${Math.max(4, Math.min(100, (count / Math.max(s.paragraphs.length, 1)) * 900))}%`,
