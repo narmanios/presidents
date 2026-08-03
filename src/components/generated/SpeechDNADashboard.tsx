@@ -1485,7 +1485,11 @@ export function SpeechDNADashboard() {
                 <div>
                   <h2 className="text-2xl font-normal">{explore.president}</h2>
                   <p className="text-sm text-slate-500">
-                    {explore.year}, {explore.party}
+                    {explore.year}, {explore.party} •{' '}
+                    {explore.paragraphs
+                      .reduce((total, p) => total + p.text.split(/\s+/).length, 0)
+                      .toLocaleString()}{' '}
+                    words
                   </p>
                 </div>
                 <button
