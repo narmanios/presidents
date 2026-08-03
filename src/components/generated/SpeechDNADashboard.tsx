@@ -570,7 +570,7 @@ const ALL_SPEECHES_MAP: Record<string, AnalyzedSpeech> = Object.fromEntries(
 ) as Record<string, AnalyzedSpeech>;
 
 export function SpeechDNADashboard() {
-  const [activeIds, setActiveIds] = useState([
+  const [activeIds, setActiveIds] = useState<(string | null)[]>([
     'biden2023',
     'arthur1882',
     'bush2008',
@@ -593,7 +593,7 @@ export function SpeechDNADashboard() {
   } | null>(null);
   const [dropdownSlot, setDropdownSlot] = useState<number | null>(null);
 
-  const active = activeIds.map(id => ALL_SPEECHES_MAP[id]).filter(Boolean);
+  const active = activeIds.map(id => (id ? ALL_SPEECHES_MAP[id] : null));
   const visibleLibrary = useMemo(
     () =>
       libraryMeta.filter(
@@ -717,7 +717,7 @@ export function SpeechDNADashboard() {
 
       <div className="mx-auto max-w-[1500px] px-5 sm:px-8 mt-8">
         <p className="mb-1 text-sm text-slate-400">
-          <span>{active.length} of 4 presidents can be viewed at a time</span>
+          <span>{active.filter(Boolean).length} of 4 presidents can be viewed at a time</span>
         </p>
       </div>
 
@@ -726,7 +726,9 @@ export function SpeechDNADashboard() {
           const speech = active[slot];
           if (!speech) {
             const isDropdownOpen = dropdownSlot === slot;
-            const availableSpeeches = libraryMeta.filter(m => !activeIds.includes(m[0]));
+            const availableSpeeches = libraryMeta.filter(
+              m => !activeIds.filter(Boolean).includes(m[0])
+            );
 
             return (
               <div
@@ -759,10 +761,10 @@ export function SpeechDNADashboard() {
                         <button
                           key={m[0]}
                           onClick={() => {
-                            if (activeIds.length < 4) {
-                              setActiveIds([...activeIds, m[0]]);
-                              setDropdownSlot(null);
-                            }
+                            const newIds = [...activeIds];
+                            newIds[slot] = m[0];
+                            setActiveIds(newIds);
+                            setDropdownSlot(null);
                           }}
                           className="w-full text-left rounded-lg border border-white/5 bg-black/10 p-2 transition hover:border-white/20 hover:bg-white/10"
                         >
@@ -803,7 +805,11 @@ export function SpeechDNADashboard() {
                 <div className="flex flex-col items-end gap-2">
                   <button
                     aria-label={`Remove ${speech.president}`}
-                    onClick={() => setActiveIds(activeIds.filter(id => id !== speech.presidentId))}
+                    onClick={() => {
+                      const newIds = [...activeIds];
+                      newIds[slot] = null;
+                      setActiveIds(newIds);
+                    }}
                     className="rounded-lg p-1 text-slate-500 hover:bg-white/10 hover:text-white"
                   >
                     <X size={15} />
@@ -956,38 +962,42 @@ export function SpeechDNADashboard() {
               <h2 className="mt-1 text-2xl font-normal">Theme Frequency Comparison</h2>
             </div>
             <div className="flex flex-wrap gap-3">
-              {active.map((s, idx) => (
-                <span
-                  key={s.presidentId}
-                  className="text-sm text-slate-400 flex items-center gap-1.5"
-                >
+              {active
+                .filter((s): s is AnalyzedSpeech => s !== null)
+                .map((s, idx) => (
                   <span
-                    className="w-1.5 h-1.5 rounded-full"
-                    style={{ backgroundColor: CHART_COLORS[idx % CHART_COLORS.length] }}
-                  />
-                  {s.surname}
-                </span>
-              ))}
+                    key={s.presidentId}
+                    className="text-sm text-slate-400 flex items-center gap-1.5"
+                  >
+                    <span
+                      className="w-1.5 h-1.5 rounded-full"
+                      style={{ backgroundColor: CHART_COLORS[idx % CHART_COLORS.length] }}
+                    />
+                    {s.surname}
+                  </span>
+                ))}
             </div>
           </div>
           <div className="mt-8 grid grid-cols-8 gap-2 border-b border-white/10 pb-2">
             {THEMES.map(t => (
               <div key={t.id} className="flex h-44 flex-col justify-end gap-1">
                 <div className="flex h-full items-end justify-center gap-0.5">
-                  {active.map((s, idx) => {
-                    const count = s.tallies.find(x => x.themeId === t.id)?.count ?? 0;
-                    return (
-                      <div
-                        key={s.presidentId}
-                        title={`${s.surname}: ${count}`}
-                        className="w-full max-w-3 rounded-t-sm transition hover:brightness-125"
-                        style={{
-                          height: `${Math.max(4, Math.min(100, (count / Math.max(s.paragraphs.length, 1)) * 900))}%`,
-                          backgroundColor: CHART_COLORS[idx % CHART_COLORS.length],
-                        }}
-                      />
-                    );
-                  })}
+                  {active
+                    .filter((s): s is AnalyzedSpeech => s !== null)
+                    .map((s, idx) => {
+                      const count = s.tallies.find(x => x.themeId === t.id)?.count ?? 0;
+                      return (
+                        <div
+                          key={s.presidentId}
+                          title={`${s.surname}: ${count}`}
+                          className="w-full max-w-3 rounded-t-sm transition hover:brightness-125"
+                          style={{
+                            height: `${Math.max(4, Math.min(100, (count / Math.max(s.paragraphs.length, 1)) * 900))}%`,
+                            backgroundColor: CHART_COLORS[idx % CHART_COLORS.length],
+                          }}
+                        />
+                      );
+                    })}
                 </div>
                 <span className="truncate text-center text-xs text-slate-500">{t.label}</span>
               </div>
