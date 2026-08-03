@@ -1360,13 +1360,16 @@ export function SpeechDNADashboard() {
                       const percentage = (count / Math.max(s.paragraphs.length, 1)) * 100;
                       const themeShades = THEME_SHADES[t.id] || CHART_COLORS;
                       const barColor = themeShades[idx % themeShades.length];
+                      const wordCount = s.paragraphs
+                        .reduce((total, p) => total + p.text.split(/\s+/).length, 0)
+                        .toLocaleString();
                       return (
                         <div
                           key={s.presidentId}
-                          title={`${idx + 1}. ${s.surname}: ${count} segments (${percentage.toFixed(1)}%)`}
+                          title={`${idx + 1}. ${s.surname} (${wordCount} words): ${count} segments (${percentage.toFixed(1)}%)`}
                           className="w-full max-w-3 rounded-t-sm"
                           style={{
-                            height: `${Math.max(4, Math.min(100, (count / Math.max(s.paragraphs.length, 1)) * 900))}%`,
+                            height: `${Math.max(2, percentage * 4)}%`,
                             backgroundColor: barColor,
                           }}
                         />
