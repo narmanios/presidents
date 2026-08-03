@@ -1307,7 +1307,6 @@ export function SpeechDNADashboard() {
                         style={{ backgroundColor: THEMES.find(x => x.id === t.themeId)?.color }}
                       />
                       <span>{THEMES.find(x => x.id === t.themeId)?.label}</span>
-                      <span className="text-slate-600">({t.count})</span>
                     </div>
                   ))}
                 </div>
@@ -1353,7 +1352,7 @@ export function SpeechDNADashboard() {
                         <div
                           key={s.presidentId}
                           title={`${s.surname}: ${count}`}
-                          className="w-full max-w-3 rounded-t-sm transition hover:brightness-125"
+                          className="w-full max-w-3 rounded-t-sm"
                           style={{
                             height: `${Math.max(4, Math.min(100, (count / Math.max(s.paragraphs.length, 1)) * 900))}%`,
                             backgroundColor: CHART_COLORS[idx % CHART_COLORS.length],
