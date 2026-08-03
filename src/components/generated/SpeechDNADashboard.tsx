@@ -1349,9 +1349,9 @@ export function SpeechDNADashboard() {
                 ))}
             </div>
           </div>
-          <div className="mt-8 grid grid-cols-8 gap-2 border-b border-white/10 pb-2">
+          <div className="mt-12 grid grid-cols-8 gap-2 border-b border-white/10 pb-2">
             {THEMES.map(t => (
-              <div key={t.id} className="flex h-44 flex-col justify-end gap-1">
+              <div key={t.id} className="flex h-56 flex-col justify-end gap-1 overflow-hidden">
                 <div className="flex h-full items-end justify-center gap-0.5">
                   {active
                     .filter((s): s is AnalyzedSpeech => s !== null)
@@ -1369,7 +1369,7 @@ export function SpeechDNADashboard() {
                           title={`${idx + 1}. ${s.surname} (${wordCount} words): ${count} segments (${percentage.toFixed(1)}%)`}
                           className="w-full max-w-3 rounded-t-sm"
                           style={{
-                            height: `${Math.max(2, percentage * 4)}%`,
+                            height: `${Math.min(100, Math.max(2, percentage * 4))}%`,
                             backgroundColor: barColor,
                           }}
                         />
