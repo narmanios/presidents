@@ -887,9 +887,13 @@ function normalizeRungs(speech: AnalyzedSpeech): RungGeom[] {
 function analyzeSpeech(speech: SpeechEntry): AnalyzedSpeech {
   const paragraphs = speech.paragraphs.map(text => {
     const lower = text.toLowerCase();
-    const matchedThemes = THEMES.filter(t => t.keywords.some(k => lower.includes(k))).map(
-      t => t.id
-    );
+    const matchedThemes = THEMES.filter(t => 
+      t.keywords.some(k => {
+        // Use word boundary regex to match whole words only
+        const regex = new RegExp(`\\b${k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+        return regex.test(text);
+      })
+    ).map(t => t.id);
     const dominant = matchedThemes[0] ?? 'none';
     return {
       text,
