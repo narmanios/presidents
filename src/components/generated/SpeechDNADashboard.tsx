@@ -646,6 +646,18 @@ const HELIX_WIDTH = 148,
 
 const CHART_COLORS = ['#D96B6B', '#6FA0E5', '#5FBD72', '#E5B445']; // Red, Blue, Green, Yellow
 
+// Theme-based color shades for comparison chart (4 shades per theme)
+const THEME_SHADES: Record<ThemeId, string[]> = {
+  economy: ['#00FF41', '#00D436', '#00A82B', '#007D20'], // Green shades
+  healthcare: ['#FF0000', '#D60000', '#AD0000', '#850000'], // Red shades
+  security: ['#FFC107', '#D6A006', '#AD8005', '#856004'], // Yellow/amber shades
+  education: ['#00BFFF', '#00A3D6', '#0087AD', '#006B85'], // Blue shades
+  bipartisan: ['#FF1493', '#D6117C', '#AD0E65', '#850B4E'], // Fuschia shades
+  foreign: ['#FF5F1F', '#D6501A', '#AD4115', '#853210'], // Orange shades
+  environment: ['#00FFFF', '#00D6D6', '#00ADAD', '#008585'], // Aqua/cyan shades
+  democracy: ['#8A2BE2', '#7524BF', '#601D9C', '#4B1779'], // Purple shades
+};
+
 const ACCENTS: Record<string, string> = {
   biden: '#5B92E5',
   arthur: '#C48A3C',
@@ -1331,10 +1343,7 @@ export function SpeechDNADashboard() {
                     key={s.presidentId}
                     className="text-sm text-slate-400 flex items-center gap-1.5"
                   >
-                    <span
-                      className="w-1.5 h-1.5 rounded-full"
-                      style={{ backgroundColor: CHART_COLORS[idx % CHART_COLORS.length] }}
-                    />
+                    <span className="text-xs">{idx + 1}.</span>
                     {s.surname}
                   </span>
                 ))}
@@ -1349,14 +1358,16 @@ export function SpeechDNADashboard() {
                     .map((s, idx) => {
                       const count = s.tallies.find(x => x.themeId === t.id)?.count ?? 0;
                       const percentage = (count / Math.max(s.paragraphs.length, 1)) * 100;
+                      const themeShades = THEME_SHADES[t.id] || CHART_COLORS;
+                      const barColor = themeShades[idx % themeShades.length];
                       return (
                         <div
                           key={s.presidentId}
-                          title={`${s.surname}: ${count} segments (${percentage.toFixed(1)}%)`}
+                          title={`${idx + 1}. ${s.surname}: ${count} segments (${percentage.toFixed(1)}%)`}
                           className="w-full max-w-3 rounded-t-sm"
                           style={{
                             height: `${Math.max(4, Math.min(100, (count / Math.max(s.paragraphs.length, 1)) * 900))}%`,
-                            backgroundColor: CHART_COLORS[idx % CHART_COLORS.length],
+                            backgroundColor: barColor,
                           }}
                         />
                       );
