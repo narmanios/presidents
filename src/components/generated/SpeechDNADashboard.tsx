@@ -586,6 +586,11 @@ export function SpeechDNADashboard() {
     x: number;
     y: number;
   } | null>(null);
+  const [clicked, setClicked] = useState<{
+    r: RungGeom;
+    x: number;
+    y: number;
+  } | null>(null);
   const [dropdownSlot, setDropdownSlot] = useState<number | null>(null);
 
   const active = activeIds.map(id => ALL_SPEECHES_MAP[id]).filter(Boolean);
@@ -842,7 +847,7 @@ export function SpeechDNADashboard() {
                     const matches =
                       filters.length === 0 ||
                       filters.some(f => r.originalSegment.matchedThemes.includes(f));
-                    const activeR = hover?.r === r;
+                    const activeR = hover?.r === r || clicked?.r === r;
                     const rungColor = matches ? r.originalSegment.themeColor : '#475569';
                     return (
                       <g
@@ -862,8 +867,16 @@ export function SpeechDNADashboard() {
                           })
                         }
                         onMouseLeave={() => setHover(null)}
+                        onClick={e => {
+                          e.stopPropagation();
+                          setClicked({
+                            r,
+                            x: e.clientX || window.innerWidth / 2,
+                            y: e.clientY || window.innerHeight / 2,
+                          });
+                        }}
                         style={{
-                          cursor: 'crosshair',
+                          cursor: 'pointer',
                           transition: 'all .2s',
                         }}
                       >
@@ -984,7 +997,7 @@ export function SpeechDNADashboard() {
       </section>
 
       <AnimatePresence>
-        {hover && (
+        {hover && !clicked && (
           <motion.div
             initial={{
               opacity: 0,
@@ -1019,6 +1032,62 @@ export function SpeechDNADashboard() {
               ))}
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {clicked && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[99] bg-black/20"
+              onClick={() => setClicked(null)}
+            />
+            <motion.div
+              initial={{
+                opacity: 0,
+                scale: 0.95,
+              }}
+              animate={{
+                opacity: 1,
+                scale: 1,
+              }}
+              exit={{
+                opacity: 0,
+                scale: 0.95,
+              }}
+              className="fixed z-[100] max-w-xs rounded-xl border border-white/15 bg-[#111827]/98 p-3 text-xs leading-relaxed text-slate-200 shadow-2xl"
+              style={{
+                left: Math.min(Math.max(clicked.x - 150, 20), window.innerWidth - 340),
+                top: Math.min(Math.max(clicked.y - 80, 20), window.innerHeight - 200),
+              }}
+            >
+              <button
+                onClick={() => setClicked(null)}
+                className="absolute right-2 top-2 rounded-lg p-1 text-slate-400 hover:bg-white/10 hover:text-white"
+                aria-label="Close tooltip"
+              >
+                <X size={14} />
+              </button>
+              <p className="pr-6">{clicked.r.originalSegment.text}</p>
+              <div className="mt-2 flex flex-wrap gap-1">
+                {clicked.r.originalSegment.matchedThemes.map(id => (
+                  <span
+                    key={id}
+                    className="text-xs text-slate-400 cursor-default flex items-center gap-1.5"
+                  >
+                    <span
+                      className="w-1.5 h-1.5 rounded-full"
+                      style={{ backgroundColor: THEMES.find(t => t.id === id)?.color }}
+                    />
+                    {THEMES.find(t => t.id === id)?.label}
+                  </span>
+                ))}
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
 
