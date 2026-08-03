@@ -1344,7 +1344,9 @@ export function SpeechDNADashboard() {
                     className="text-sm text-slate-400 flex items-center gap-1.5"
                   >
                     <span className="text-xs">{idx + 1}.</span>
-                    {s.surname}
+                    <span>
+                      {s.surname} <span className="text-xs text-slate-600">({s.year})</span>
+                    </span>
                   </span>
                 ))}
             </div>
