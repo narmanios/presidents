@@ -592,6 +592,12 @@ export function SpeechDNADashboard() {
     y: number;
   } | null>(null);
   const [dropdownSlot, setDropdownSlot] = useState<number | null>(null);
+  const [paragraphHover, setParagraphHover] = useState<number | null>(null);
+  const [paragraphClicked, setParagraphClicked] = useState<{
+    index: number;
+    x: number;
+    y: number;
+  } | null>(null);
 
   const active = activeIds.map(id => (id ? ALL_SPEECHES_MAP[id] : null));
   const visibleLibrary = useMemo(
@@ -1127,7 +1133,11 @@ export function SpeechDNADashboard() {
                 </div>
                 <button
                   aria-label="Close speech explorer"
-                  onClick={() => setExplore(null)}
+                  onClick={() => {
+                    setExplore(null);
+                    setParagraphHover(null);
+                    setParagraphClicked(null);
+                  }}
                   className="rounded-full p-2 hover:bg-slate-100"
                 >
                   <X size={18} />
@@ -1150,25 +1160,99 @@ export function SpeechDNADashboard() {
                 </div>
                 <div className="space-y-4">
                   {explore.paragraphs.map((p, i) => (
-                    <p
+                    <div
                       key={`${explore.presidentId}-para-${i}`}
-                      className="border-l-2 pl-4 text-sm leading-6 text-slate-700"
-                      style={{
-                        borderColor: p.themeColor,
+                      className="relative"
+                      onMouseEnter={() => setParagraphHover(i)}
+                      onMouseLeave={() => setParagraphHover(null)}
+                      onClick={(e) => {
+                        if (p.matchedThemes.length > 0) {
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          setParagraphClicked({
+                            index: i,
+                            x: rect.left + rect.width / 2,
+                            y: rect.top + rect.height / 2,
+                          });
+                        }
                       }}
                     >
-                      {p.text}
-                    </p>
+                      <p
+                        className="border-l-2 pl-4 text-sm leading-6 text-slate-700 cursor-pointer transition-colors hover:bg-slate-50"
+                        style={{
+                          borderColor: p.themeColor,
+                        }}
+                      >
+                        {p.text}
+                      </p>
+                      {paragraphHover === i && p.matchedThemes.length > 0 && (
+                        <div className="pointer-events-none absolute left-0 top-full z-10 mt-1 hidden rounded-md bg-slate-900 px-3 py-2 text-xs text-white shadow-lg sm:block">
+                          <div className="flex flex-wrap gap-2">
+                            {p.matchedThemes.map(themeId => {
+                              const theme = THEMES.find(t => t.id === themeId);
+                              return (
+                                <span key={themeId} className="flex items-center gap-1">
+                                  <span
+                                    className="w-1.5 h-1.5 rounded-full"
+                                    style={{ backgroundColor: theme?.color }}
+                                  />
+                                  {theme?.label}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
               </div>
-              <footer className="flex-shrink-0 border-t border-slate-200 px-5 py-3 text-sm text-slate-500">
-                {explore.paragraphs.length} segments, {explore.themedCount} with detected themes
-              </footer>
             </motion.section>
           </div>
         )}
       </AnimatePresence>
+
+      {/* Paragraph click tooltip for mobile */}
+      {paragraphClicked && explore && (
+        <>
+          <div
+            className="fixed inset-0 z-[60] sm:hidden"
+            onClick={() => setParagraphClicked(null)}
+          />
+          <div
+            className="fixed z-[70] rounded-md bg-slate-900 px-4 py-3 text-xs text-white shadow-xl sm:hidden"
+            style={{
+              left: '50%',
+              top: '50%',
+              transform: 'translate(-50%, -50%)',
+              maxWidth: '90vw',
+            }}
+          >
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <span className="font-medium">Themes in this paragraph:</span>
+              <button
+                onClick={() => setParagraphClicked(null)}
+                className="rounded-lg p-1 hover:bg-white/10"
+              >
+                <X size={14} />
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {explore.paragraphs[paragraphClicked.index]?.matchedThemes.map(themeId => {
+                const theme = THEMES.find(t => t.id === themeId);
+                return (
+                  <span key={themeId} className="flex items-center gap-1.5">
+                    <span
+                      className="w-1.5 h-1.5 rounded-full"
+                      style={{ backgroundColor: theme?.color }}
+                    />
+                    {theme?.label}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
     </main>
   );
 }
