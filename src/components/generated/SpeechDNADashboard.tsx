@@ -641,8 +641,13 @@ const THEMES: {
 const HELIX_WIDTH = 148,
   HELIX_HEIGHT = 306,
   HELIX_PAD = 14,
-  HELIX_AMP = 46,
-  TARGET_RUNGS = 100;
+  HELIX_AMP = 46;
+
+// Gap between rungs, in viewBox units, shared by every helix. Set by how many
+// rungs it takes to fill the frame — lower this number to spread rungs further
+// apart, raise it to pack them tighter.
+const RUNGS_PER_FRAME = 70;
+const RUNG_SPACING = (HELIX_HEIGHT - HELIX_PAD * 2) / (RUNGS_PER_FRAME - 1);
 
 const CHART_COLORS = ['#D96B6B', '#6FA0E5', '#5FBD72', '#E5B445']; // Red, Blue, Green, Yellow
 
@@ -852,8 +857,6 @@ function buildLibraryData(): {
 const { libraryMeta, speechesMap } = buildLibraryData();
 
 function buildRungs(segments: AnalyzedSegment[]): RungGeom[] {
-  const usable = HELIX_HEIGHT - HELIX_PAD * 2;
-  const spacing = usable / Math.max(segments.length - 1, 1);
   return segments.map((segment, i) => {
     const angle = i * 0.143;
     return {
@@ -861,39 +864,40 @@ function buildRungs(segments: AnalyzedSegment[]): RungGeom[] {
       originalSegment: segment,
       x1: HELIX_WIDTH / 2 + Math.sin(angle) * HELIX_AMP,
       x2: HELIX_WIDTH / 2 - Math.sin(angle) * HELIX_AMP,
-      y: HELIX_PAD + i * spacing,
+      y: HELIX_PAD + i * RUNG_SPACING,
     };
   });
 }
 
+// One rung per paragraph, at a fixed spacing. The helix is as tall as it needs
+// to be; the card clips it and scrolls.
 function normalizeRungs(speech: AnalyzedSpeech): RungGeom[] {
-  if (speech.segments.length === 0) return buildRungs([]);
-
-  // Only include segments that have at least one theme match (exclude grey/unthemed segments)
-  const themedSegments = speech.segments.filter(seg => seg.matchedThemes.length > 0);
-
-  if (themedSegments.length === 0) return buildRungs([]);
-
-  // Only use actual themed segments, don't pad or repeat
-  const normalized: AnalyzedSegment[] =
-    themedSegments.length >= TARGET_RUNGS ? themedSegments.slice(0, TARGET_RUNGS) : themedSegments;
-
-  return buildRungs(normalized).map((rung, i) => ({
-    ...rung,
-    originalSegment: normalized[i],
-  }));
+  return buildRungs(speech.segments);
 }
+
+// Full height of a helix in viewBox units, never shorter than the card so short
+// speeches still fill the frame.
+function helixHeight(rungs: RungGeom[]): number {
+  return Math.max(HELIX_HEIGHT, HELIX_PAD * 2 + Math.max(rungs.length - 1, 0) * RUNG_SPACING);
+}
+
+// One alternation regex per theme, compiled once at startup, e.g.
+// /\b(?:economy|economic|jobs|...)\b/i. The previous version built a fresh
+// RegExp for every keyword of every paragraph — 26.9M compilations across the
+// 233-speech corpus, which blocked the main thread for ~10s before first
+// render. Word-boundary semantics and match order are unchanged.
+const THEME_MATCHERS: { id: ThemeId; color: string; regex: RegExp }[] = THEMES.map(t => ({
+  id: t.id,
+  color: t.color,
+  regex: new RegExp(
+    `\\b(?:${t.keywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b`,
+    'i'
+  ),
+}));
 
 function analyzeSpeech(speech: SpeechEntry): AnalyzedSpeech {
   const paragraphs = speech.paragraphs.map(text => {
-    const lower = text.toLowerCase();
-    const matchedThemes = THEMES.filter(t => 
-      t.keywords.some(k => {
-        // Use word boundary regex to match whole words only
-        const regex = new RegExp(`\\b${k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
-        return regex.test(text);
-      })
-    ).map(t => t.id);
+    const matchedThemes = THEME_MATCHERS.filter(m => m.regex.test(text)).map(m => m.id);
     const dominant = matchedThemes[0] ?? 'none';
     return {
       text,
@@ -1160,12 +1164,19 @@ export function SpeechDNADashboard() {
             );
           }
 
+          const helixH = helixHeight(speech.rungs);
+          const helixScrolls = helixH > HELIX_HEIGHT;
+
           return (
             <article
               key={speech.presidentId}
               className="overflow-visible rounded-md bg-white/[.05] p-4 backdrop-blur-xl sm:p-5"
             >
-              <div className="flex items-start justify-between">
+              {/* min-h reserves room for a two-line name (e.g. "Chester A. Arthur"
+                  wraps in a narrow column) so every card's helix starts at the
+                  same y and the tops line up across the row. items-start keeps
+                  the slack below the text rather than above the name. */}
+              <div className="flex min-h-[100px] items-start justify-between">
                 <div>
                   <div className="flex items-center gap-2">
                     <h2 className="text-xl font-medium">{speech.president}</h2>
@@ -1202,13 +1213,13 @@ export function SpeechDNADashboard() {
                 </div>
               </div>
 
-              <div className="relative flex justify-center overflow-visible py-2">
+              <div
+                className={`relative mt-6 mb-4 flex h-[420px] items-start justify-center overflow-x-hidden overflow-y-auto pt-3 sm:mt-7 sm:mb-5 sm:h-[480px] ${helixScrolls ? 'helix-scroll' : ''}`}
+              >
                 <motion.svg
-                  viewBox={`0 0 ${HELIX_WIDTH} ${HELIX_HEIGHT}`}
-                  className="h-[420px] w-[200px] sm:h-[480px] sm:w-[220px]"
-                  animate={{
-                    scale: [1, 1.02, 1],
-                  }}
+                  viewBox={`0 0 ${HELIX_WIDTH} ${helixH}`}
+                  className="h-auto w-[200px] shrink-0 sm:w-[220px]"
+                  animate={helixScrolls ? undefined : { scale: [1, 1.02, 1] }}
                   transition={{
                     duration: 5,
                     repeat: Infinity,
