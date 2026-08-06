@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Search,
@@ -955,6 +955,7 @@ export function SpeechDNADashboard() {
   ]);
   const [filters, setFilters] = useState<ThemeId[]>([]);
   const [expanded, setExpanded] = useState(false);
+  const libraryRef = useRef<HTMLElement>(null);
   const [query, setQuery] = useState('');
   const [era, setEra] = useState<EraId | 'all'>('all');
   const [explore, setExplore] = useState<AnalyzedSpeech | null>(null);
@@ -975,6 +976,14 @@ export function SpeechDNADashboard() {
     x: number;
     y: number;
   } | null>(null);
+
+  // The library sits at the bottom of the page, so expanding it would otherwise
+  // open below the fold. 'nearest' scrolls the minimum needed to reveal the
+  // whole panel and does nothing when it is already fully visible.
+  useEffect(() => {
+    if (!expanded) return;
+    libraryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, [expanded]);
 
   const active = activeIds.map(id => (id ? ALL_SPEECHES_MAP[id] : null));
   const visibleLibrary = useMemo(
@@ -1007,76 +1016,6 @@ export function SpeechDNADashboard() {
         </div>
       </header>
 
-      <section className="mx-auto max-w-[1500px] px-5 sm:px-8">
-        <div className="overflow-hidden rounded-md bg-white/[.035]">
-          <button
-            onClick={() => setExpanded(!expanded)}
-            className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-white/[.04]"
-          >
-            <span className="flex flex-wrap items-center gap-2">
-              <Command size={14} className="text-slate-500" />
-              <strong className="mr-2 text-xs text-slate-400">Speech Library</strong>
-            </span>
-            {expanded ? (
-              <ChevronUp size={16} />
-            ) : (
-              <span className="flex items-center gap-3 text-[10px] text-slate-400">
-                <span>BROWSE</span>
-                <ChevronDown size={16} />
-              </span>
-            )}
-          </button>
-          {expanded && (
-            <div className="border-t border-white/10 p-4">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-                <label className="relative flex-1">
-                  <Search size={14} className="absolute left-3 top-2.5 text-slate-500" />
-                  <input
-                    aria-label="Search speech library"
-                    value={query}
-                    onChange={e => setQuery(e.target.value)}
-                    placeholder="Search president or year"
-                    className="w-full rounded-lg border border-white/10 bg-black/20 py-2 pl-9 pr-3 text-xs outline-none focus:border-blue-400"
-                  />
-                </label>
-                <div className="flex flex-wrap gap-1">
-                  {(
-                    ['all', 'founding', 'civil', 'progressive', 'modern', 'contemporary'] as const
-                  ).map(e => (
-                    <button
-                      key={e}
-                      onClick={() => setEra(e)}
-                      className={`rounded-md px-2 py-2 text-[10px] ${era === e ? 'bg-white text-slate-900' : 'text-slate-400 hover:bg-white/10'}`}
-                    >
-                      {e === 'all' ? 'All' : eraNames[e]}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="mt-4 grid max-h-40 grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-4 lg:grid-cols-6">
-                {visibleLibrary.map(m => {
-                  const selected = activeIds.includes(m[0]);
-                  return (
-                    <button
-                      key={m[0]}
-                      onClick={() => {
-                        setExplore(ALL_SPEECHES_MAP[m[0]]);
-                      }}
-                      className={`rounded-lg border p-2 text-left transition ${selected ? 'border-white/30 bg-white/10' : 'border-white/5 bg-black/10 hover:border-white/20'}`}
-                    >
-                      <span className="block text-sm text-slate-300">{m[2]}</span>
-                      <span className="text-xs text-slate-500">
-                        {m[3]}, {m[5]}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
-      </section>
-
       <section className="mx-auto max-w-[1500px] px-5 sm:px-8 mt-8">
         <nav aria-label="Global theme filter" className="flex flex-wrap gap-2">
           <button
@@ -1104,7 +1043,9 @@ export function SpeechDNADashboard() {
         </p>
       </div>
 
-      <section className="mx-auto grid max-w-[1500px] grid-cols-1 gap-5 px-5 py-5 sm:grid-cols-2 sm:px-8 xl:grid-cols-4">
+      {/* pb-10 matches the comparison section's, so the gap above the chart is
+          the same as the gap between the chart and the library below it. */}
+      <section className="mx-auto grid max-w-[1500px] grid-cols-1 gap-5 px-5 pt-5 pb-10 sm:grid-cols-2 sm:px-8 xl:grid-cols-4">
         {[0, 1, 2, 3].map(slot => {
           const speech = active[slot];
           if (!speech) {
@@ -1397,6 +1338,79 @@ export function SpeechDNADashboard() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section
+        ref={libraryRef}
+        className="mx-auto max-w-[1500px] scroll-mb-5 px-5 pb-10 sm:px-8"
+      >
+        <div className="overflow-hidden rounded-md bg-white/[.035]">
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-white/[.04]"
+          >
+            <span className="flex flex-wrap items-center gap-2">
+              <Command size={14} className="text-slate-500" />
+              <strong className="mr-2 text-xs text-slate-400">Speech Library</strong>
+            </span>
+            {expanded ? (
+              <ChevronUp size={16} />
+            ) : (
+              <span className="flex items-center gap-3 text-[10px] text-slate-400">
+                <span>BROWSE</span>
+                <ChevronDown size={16} />
+              </span>
+            )}
+          </button>
+          {expanded && (
+            <div className="border-t border-white/10 p-4">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+                <label className="relative flex-1">
+                  <Search size={14} className="absolute left-3 top-2.5 text-slate-500" />
+                  <input
+                    aria-label="Search speech library"
+                    value={query}
+                    onChange={e => setQuery(e.target.value)}
+                    placeholder="Search president or year"
+                    className="w-full rounded-lg border border-white/10 bg-black/20 py-2 pl-9 pr-3 text-xs outline-none focus:border-blue-400"
+                  />
+                </label>
+                <div className="flex flex-wrap gap-1">
+                  {(
+                    ['all', 'founding', 'civil', 'progressive', 'modern', 'contemporary'] as const
+                  ).map(e => (
+                    <button
+                      key={e}
+                      onClick={() => setEra(e)}
+                      className={`rounded-md px-2 py-2 text-[10px] ${era === e ? 'bg-white text-slate-900' : 'text-slate-400 hover:bg-white/10'}`}
+                    >
+                      {e === 'all' ? 'All' : eraNames[e]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="mt-4 grid max-h-40 grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-4 lg:grid-cols-6">
+                {visibleLibrary.map(m => {
+                  const selected = activeIds.includes(m[0]);
+                  return (
+                    <button
+                      key={m[0]}
+                      onClick={() => {
+                        setExplore(ALL_SPEECHES_MAP[m[0]]);
+                      }}
+                      className={`rounded-lg border p-2 text-left transition ${selected ? 'border-white/30 bg-white/10' : 'border-white/5 bg-black/10 hover:border-white/20'}`}
+                    >
+                      <span className="block text-sm text-slate-300">{m[2]}</span>
+                      <span className="text-xs text-slate-500">
+                        {m[3]}, {m[5]}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
