@@ -1665,112 +1665,123 @@ export function SpeechDNADashboard() {
                   );
                 })()}
 
-                <div className="mt-6 relative">
-                  <div className="flex h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-white/5 max-w-md">
-                    {speech.tallies.map(t => {
-                      const foundTheme = THEMES.find(x => x.id === t.themeId);
-                      const percentage = (t.count / Math.max(speech.paragraphs.length, 1)) * 100;
-                      const isHovered =
-                        hoveredCardBar?.speechId === speech.presidentId &&
-                        hoveredCardBar?.themeId === t.themeId;
-                      const wordCount = speech.paragraphs
-                        .reduce((total, p) => total + p.text.split(/\s+/).length, 0)
-                        .toLocaleString();
-                      return (
-                        <span
+                <div className="mt-3 flex items-end gap-4">
+                  <div className="flex-1">
+                    <div className="text-xs text-gray-700 dark:text-slate-400 font-medium mb-1">
+                      Top themes:
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {speech.topThemes.map(t => (
+                        <div
                           key={t.themeId}
-                          onMouseEnter={() =>
-                            setHoveredCardBar({ speechId: speech.presidentId, themeId: t.themeId })
-                          }
-                          onMouseLeave={() => setHoveredCardBar(null)}
-                          className="cursor-pointer transition-opacity hover:opacity-80"
-                          style={{
-                            width: `${Math.max(2, percentage)}%`,
-                            backgroundColor: foundTheme?.color,
-                          }}
-                        />
-                      );
-                    })}
-                    {(() => {
-                      const otherCount = speech.paragraphs.filter(
-                        p => p.matchedThemes.length === 0
-                      ).length;
-                      const otherPercentage =
-                        (otherCount / Math.max(speech.paragraphs.length, 1)) * 100;
-                      return otherCount > 0 ? (
-                        <span
-                          onMouseEnter={() =>
-                            setHoveredCardBar({ speechId: speech.presidentId, themeId: 'other' })
-                          }
-                          onMouseLeave={() => setHoveredCardBar(null)}
-                          className="cursor-pointer transition-opacity hover:opacity-80"
-                          style={{
-                            width: `${otherPercentage}%`,
-                            backgroundColor: OTHER_COLOR,
-                          }}
-                        />
-                      ) : null;
-                    })()}
+                          className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-slate-400"
+                        >
+                          <span
+                            className="w-1.5 h-1.5 rounded-full"
+                            style={{
+                              backgroundColor: THEMES.find(x => x.id === t.themeId)?.color,
+                            }}
+                          />
+                          <span>{THEMES.find(x => x.id === t.themeId)?.label}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  {hoveredCardBar?.speechId === speech.presidentId &&
-                    (() => {
-                      const wordCount = speech.paragraphs
-                        .reduce((total, p) => total + p.text.split(/\s+/).length, 0)
-                        .toLocaleString();
 
-                      if (hoveredCardBar.themeId === 'other') {
+                  <div className="relative w-48 shrink-0">
+                    <div className="flex h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-white/5">
+                      {speech.tallies.map(t => {
+                        const foundTheme = THEMES.find(x => x.id === t.themeId);
+                        const percentage = (t.count / Math.max(speech.paragraphs.length, 1)) * 100;
+                        const isHovered =
+                          hoveredCardBar?.speechId === speech.presidentId &&
+                          hoveredCardBar?.themeId === t.themeId;
+                        const wordCount = speech.paragraphs
+                          .reduce((total, p) => total + p.text.split(/\s+/).length, 0)
+                          .toLocaleString();
+                        return (
+                          <span
+                            key={t.themeId}
+                            onMouseEnter={() =>
+                              setHoveredCardBar({
+                                speechId: speech.presidentId,
+                                themeId: t.themeId,
+                              })
+                            }
+                            onMouseLeave={() => setHoveredCardBar(null)}
+                            className="cursor-pointer transition-opacity hover:opacity-80"
+                            style={{
+                              width: `${Math.max(2, percentage)}%`,
+                              backgroundColor: foundTheme?.color,
+                            }}
+                          />
+                        );
+                      })}
+                      {(() => {
                         const otherCount = speech.paragraphs.filter(
                           p => p.matchedThemes.length === 0
                         ).length;
                         const otherPercentage =
                           (otherCount / Math.max(speech.paragraphs.length, 1)) * 100;
-                        return (
-                          <div
-                            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1.5 bg-gray-900 dark:bg-gray-800 text-white text-xs rounded shadow-xl whitespace-nowrap pointer-events-none"
-                            style={{ zIndex: 10001 }}
-                          >
-                            <div className="font-medium">{speech.surname}</div>
-                            <div className="text-gray-300">{wordCount} words</div>
-                            <div>
-                              Other: {otherCount} segments ({otherPercentage.toFixed(1)}%)
-                            </div>
-                          </div>
-                        );
-                      } else {
-                        const t = speech.tallies.find(x => x.themeId === hoveredCardBar.themeId);
-                        const foundTheme = THEMES.find(x => x.id === hoveredCardBar.themeId);
-                        const percentage = (t!.count / Math.max(speech.paragraphs.length, 1)) * 100;
-                        return (
-                          <div
-                            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1.5 bg-gray-900 dark:bg-gray-800 text-white text-xs rounded shadow-xl whitespace-nowrap pointer-events-none"
-                            style={{ zIndex: 10001 }}
-                          >
-                            <div className="font-medium">{speech.surname}</div>
-                            <div className="text-gray-300">{wordCount} words</div>
-                            <div>
-                              {foundTheme?.label}: {t!.count} segments ({percentage.toFixed(1)}%)
-                            </div>
-                          </div>
-                        );
-                      }
-                    })()}
-                </div>
-
-                <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                  {speech.topThemes.map(t => (
-                    <div
-                      key={t.themeId}
-                      className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-slate-400"
-                    >
-                      <span
-                        className="w-1.5 h-1.5 rounded-full"
-                        style={{
-                          backgroundColor: THEMES.find(x => x.id === t.themeId)?.color,
-                        }}
-                      />
-                      <span>{THEMES.find(x => x.id === t.themeId)?.label}</span>
+                        return otherCount > 0 ? (
+                          <span
+                            onMouseEnter={() =>
+                              setHoveredCardBar({ speechId: speech.presidentId, themeId: 'other' })
+                            }
+                            onMouseLeave={() => setHoveredCardBar(null)}
+                            className="cursor-pointer transition-opacity hover:opacity-80"
+                            style={{
+                              width: `${otherPercentage}%`,
+                              backgroundColor: OTHER_COLOR,
+                            }}
+                          />
+                        ) : null;
+                      })()}
                     </div>
-                  ))}
+                    {hoveredCardBar?.speechId === speech.presidentId &&
+                      (() => {
+                        const wordCount = speech.paragraphs
+                          .reduce((total, p) => total + p.text.split(/\s+/).length, 0)
+                          .toLocaleString();
+
+                        if (hoveredCardBar.themeId === 'other') {
+                          const otherCount = speech.paragraphs.filter(
+                            p => p.matchedThemes.length === 0
+                          ).length;
+                          const otherPercentage =
+                            (otherCount / Math.max(speech.paragraphs.length, 1)) * 100;
+                          return (
+                            <div
+                              className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1.5 bg-gray-900 dark:bg-gray-800 text-white text-xs rounded shadow-xl whitespace-nowrap pointer-events-none"
+                              style={{ zIndex: 10001 }}
+                            >
+                              <div className="font-medium">{speech.surname}</div>
+                              <div className="text-gray-300">{wordCount} words</div>
+                              <div>
+                                Other: {otherCount} segments ({otherPercentage.toFixed(1)}%)
+                              </div>
+                            </div>
+                          );
+                        } else {
+                          const t = speech.tallies.find(x => x.themeId === hoveredCardBar.themeId);
+                          const foundTheme = THEMES.find(x => x.id === hoveredCardBar.themeId);
+                          const percentage =
+                            (t!.count / Math.max(speech.paragraphs.length, 1)) * 100;
+                          return (
+                            <div
+                              className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1.5 bg-gray-900 dark:bg-gray-800 text-white text-xs rounded shadow-xl whitespace-nowrap pointer-events-none"
+                              style={{ zIndex: 10001 }}
+                            >
+                              <div className="font-medium">{speech.surname}</div>
+                              <div className="text-gray-300">{wordCount} words</div>
+                              <div>
+                                {foundTheme?.label}: {t!.count} segments ({percentage.toFixed(1)}%)
+                              </div>
+                            </div>
+                          );
+                        }
+                      })()}
+                  </div>
                 </div>
               </article>
             );
