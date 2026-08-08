@@ -1,21 +1,14 @@
-import { Theme } from './settings/types';
+import { useEffect } from 'react';
 import { SpeechDNADashboard } from './components/generated/SpeechDNADashboard';
 // %IMPORT_STATEMENT%
 
-let theme: Theme = 'light';
-
 function App() {
-  function setTheme(theme: Theme) {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }
+  // Force dark mode on document root
+  useEffect(() => {
+    document.documentElement.classList.add('dark');
+  }, []);
 
-  setTheme(theme);
-
-  return <SpeechDNADashboard />; // %EXPORT_STATEMENT%
+  return <SpeechDNADashboard />;
 }
 
 export default App;

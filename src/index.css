@@ -15,7 +15,6 @@ body {
   box-sizing: border-box;
   overflow: auto;
   overscroll-behavior-x: none;
-  background: #0f172a;
 }
 
 @theme inline {
@@ -34,10 +33,37 @@ body {
 
 :root {
   --radius: 0.625rem;
-  --background: #0f172a;
-  --foreground: #f8fafc;
-  --border: rgba(255, 255, 255, 0.1);
-  --ring: #60a5fa;
+  --background: oklch(0.985 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: #2196f3;
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.95 0 0);
+  --secondary-foreground: oklch(0.145 0 0);
+  --muted: oklch(0.95 0 0);
+  --muted-foreground: oklch(0.488 0 0);
+  --accent: #673ab7;
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: #e53935;
+  --border: oklch(0 0 0 / 10%);
+  --input: oklch(0 0 0 / 15%);
+  --ring: #673ab7;
+  --chart-1: #4caf50;
+  --chart-2: #2196f3;
+  --chart-3: #e53935;
+  --chart-4: #673ab7;
+  --chart-5: #e91e63;
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: #2196f3;
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.95 0 0);
+  --sidebar-accent-foreground: oklch(0.145 0 0);
+  --sidebar-border: oklch(0 0 0 / 10%);
+  --sidebar-ring: #673ab7;
 }
 
 .dark {
@@ -47,31 +73,31 @@ body {
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
+  --primary: #937df8;
+  --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
   --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
+  --accent: #f78ef0;
   --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
+  --destructive: #eb7b77;
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
+  --ring: #98f786;
+  --chart-1: #98f786;
+  --chart-2: #6d9efc;
+  --chart-3: #eb7b77;
+  --chart-4: #937df8;
+  --chart-5: #f78ef0;
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary: #937df8;
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.269 0 0);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar-ring: #98f786;
 }
 
 @layer base {
@@ -143,6 +169,51 @@ body {
     scrollbar-width: thin;
     scrollbar-color: rgba(148, 163, 184, 0.65) rgba(255, 255, 255, 0.08);
   }
+}
+
+/* Horizontal scrollbar for DNA visualizations */
+.scrollbar-visible::-webkit-scrollbar {
+  height: 8px;
+  -webkit-appearance: none;
+}
+.scrollbar-visible::-webkit-scrollbar-track {
+  background: rgba(229, 231, 235, 0.5);
+  border-radius: 4px;
+}
+.dark .scrollbar-visible::-webkit-scrollbar-track {
+  background: rgba(55, 65, 81, 0.3);
+}
+.scrollbar-visible::-webkit-scrollbar-thumb {
+  background: rgba(107, 114, 128, 0.6);
+  border-radius: 4px;
+}
+.dark .scrollbar-visible::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.5);
+}
+.scrollbar-visible::-webkit-scrollbar-thumb:hover {
+  background: rgba(107, 114, 128, 0.8);
+}
+.dark .scrollbar-visible::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.7);
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  .scrollbar-visible {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(107, 114, 128, 0.6) rgba(229, 231, 235, 0.5);
+  }
+  .dark .scrollbar-visible {
+    scrollbar-color: rgba(148, 163, 184, 0.5) rgba(55, 65, 81, 0.3);
+  }
+}
+
+/* Hide scrollbar completely */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* Broken Image Fallback Styles */
