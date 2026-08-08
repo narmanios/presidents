@@ -1158,6 +1158,10 @@ export function SpeechDNADashboard() {
             <h1 className="text-4xl font-normal text-gray-900 dark:text-white sm:text-6xl">
               Presidential Speech DNA
             </h1>
+            <p className="mt-4 text-base text-gray-600 dark:text-slate-400 max-w-3xl">
+              Explore the DNA of presidential State of the Union addresses. Hover over a president's
+              name and select "yes" to discover and compare addresses from other presidents.
+            </p>
           </div>
         </div>
       </header>
