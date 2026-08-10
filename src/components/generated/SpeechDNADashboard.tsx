@@ -1019,7 +1019,7 @@ export function SpeechDNADashboard() {
     'biden2023',
   ]);
   const [filters, setFilters] = useState<ThemeId[]>([]);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
   const libraryRef = useRef<HTMLElement>(null);
   const [query, setQuery] = useState('');
   const [era, setEra] = useState<EraId | 'all'>('all');
@@ -1057,13 +1057,26 @@ export function SpeechDNADashboard() {
     speechId: string;
     themeId: string;
   } | null>(null);
+  const [factCard, setFactCard] = useState<{
+    visible: boolean;
+    themeId: ThemeId | null;
+  }>({ visible: false, themeId: null });
+
+  const prevExpandedRef = useRef(expanded);
 
   // The library sits at the bottom of the page, so expanding it would otherwise
   // open below the fold. 'nearest' scrolls the minimum needed to reveal the
   // whole panel and does nothing when it is already fully visible.
+  // Only scroll when expanded changes from false to true (user clicked to expand),
+  // not when it's already true on initial mount.
   useEffect(() => {
-    if (!expanded) return;
-    libraryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    const wasExpanded = prevExpandedRef.current;
+    prevExpandedRef.current = expanded;
+
+    // Only scroll if we're transitioning from collapsed to expanded
+    if (!wasExpanded && expanded) {
+      libraryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
   }, [expanded]);
 
   const active = activeIds.map(id => (id ? ALL_SPEECHES_MAP[id] : null));
@@ -1130,6 +1143,49 @@ export function SpeechDNADashboard() {
       ),
     [era, query]
   );
+
+  // Calculate top presidents for each theme (aggregated across all their speeches)
+  const topPresidentsByTheme = useMemo(() => {
+    const result: Record<
+      ThemeId,
+      Array<{ name: string; count: number; percentage: number }>
+    > = {} as any;
+
+    THEMES.forEach(theme => {
+      // Group speeches by president
+      const presidentGroups = new Map<string, { totalThemeCount: number; totalSegments: number }>();
+
+      Object.values(ALL_SPEECHES_MAP).forEach(speech => {
+        const existing = presidentGroups.get(speech.president) || {
+          totalThemeCount: 0,
+          totalSegments: 0,
+        };
+        const themeCount = speech.segments.filter(s => s.matchedThemes.includes(theme.id)).length;
+
+        presidentGroups.set(speech.president, {
+          totalThemeCount: existing.totalThemeCount + themeCount,
+          totalSegments: existing.totalSegments + speech.segments.length,
+        });
+      });
+
+      // Convert to array and calculate aggregate percentages
+      const presidentsData = Array.from(presidentGroups.entries())
+        .map(([name, data]) => ({
+          name,
+          count: data.totalThemeCount,
+          percentage:
+            data.totalSegments > 0 ? (data.totalThemeCount / data.totalSegments) * 100 : 0,
+        }))
+        .filter(p => p.count > 0)
+        .sort((a, b) => b.percentage - a.percentage)
+        .slice(0, 3);
+
+      result[theme.id] = presidentsData;
+    });
+
+    return result;
+  }, []);
+
   const toggleTheme = (id: ThemeId) =>
     setFilters(f => (f.includes(id) ? f.filter(x => x !== id) : [...f, id]));
 
@@ -1164,7 +1220,14 @@ export function SpeechDNADashboard() {
           {THEMES.map(t => (
             <button
               key={t.id}
-              onClick={() => toggleTheme(t.id)}
+              onClick={() => {
+                const wasActive = filters.includes(t.id);
+                toggleTheme(t.id);
+                // Only show fact card when enabling (turning on) a theme
+                if (!wasActive) {
+                  setFactCard({ visible: true, themeId: t.id });
+                }
+              }}
               className={`px-2 py-1 text-xs transition flex items-center gap-1.5 ${filters.includes(t.id) ? 'text-gray-900 dark:text-white font-semibold' : 'text-gray-500 dark:text-slate-600 hover:text-gray-700 dark:hover:text-slate-400'}`}
             >
               <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: t.color }} />
@@ -2304,6 +2367,72 @@ export function SpeechDNADashboard() {
           </div>
         </>
       )}
+
+      {/* Interesting Fact Card */}
+      <AnimatePresence>
+        {factCard.visible && factCard.themeId && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.3 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 md:top-6 md:bottom-auto md:right-6 md:left-auto md:translate-x-0 z-50 w-full max-w-[260px] px-3"
+          >
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-2xl border border-gray-200 dark:border-slate-700 p-2">
+              <div className="flex items-start justify-between gap-1.5 mb-1">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                  Interesting Fact
+                </h3>
+                <button
+                  onClick={() => setFactCard({ visible: false, themeId: null })}
+                  className="rounded p-0.5 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+                  aria-label="Close"
+                >
+                  <X size={14} className="text-gray-500 dark:text-slate-400" />
+                </button>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-[11px] leading-tight text-gray-600 dark:text-slate-400">
+                  Most SOTU focus on{' '}
+                  <span
+                    className="font-semibold"
+                    style={{ color: THEMES.find(t => t.id === factCard.themeId)?.color }}
+                  >
+                    {THEMES.find(t => t.id === factCard.themeId)?.label}
+                  </span>
+                  :
+                </p>
+                <div className="space-y-1">
+                  {topPresidentsByTheme[factCard.themeId]?.map((pres, idx) => (
+                    <div
+                      key={pres.name}
+                      className="flex items-center justify-between p-1 rounded bg-gray-50 dark:bg-slate-900/50"
+                    >
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] font-bold text-gray-400 dark:text-slate-600 w-2.5">
+                          {idx + 1}.
+                        </span>
+                        <span className="text-[11px] font-medium text-gray-900 dark:text-white truncate">
+                          {pres.name}
+                        </span>
+                      </div>
+                      <div className="text-right ml-1 shrink-0">
+                        <div className="text-[11px] font-semibold text-gray-900 dark:text-white">
+                          {pres.percentage.toFixed(0)}%
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[9px] leading-tight text-gray-500 dark:text-slate-500 italic mt-1 pt-1 border-t border-gray-200 dark:border-slate-700">
+                  % of their State of the Union addresses on this topic, not their overall policy
+                  impact or legislative achievements
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </main>
   );
 }
