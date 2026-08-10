@@ -2381,7 +2381,7 @@ export function SpeechDNADashboard() {
             <div className="bg-white dark:bg-slate-800 rounded-lg shadow-2xl border border-gray-200 dark:border-slate-700 p-2">
               <div className="flex items-start justify-between gap-1.5 mb-1">
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-                  Interesting Fact
+                  Interesting detail
                 </h3>
                 <button
                   onClick={() => setFactCard({ visible: false, themeId: null })}
