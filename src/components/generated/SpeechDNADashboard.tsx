@@ -2032,7 +2032,7 @@ export function SpeechDNADashboard() {
                   ))}
                 </div>
               </div>
-              <div className="mt-4 grid max-h-40 grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-4 lg:grid-cols-6">
+              <div className="mt-4 grid h-40 grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-4 lg:grid-cols-6">
                 {visibleLibrary.map(m => {
                   const selected = activeIds.includes(m[0]);
                   return (
