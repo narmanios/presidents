@@ -1290,7 +1290,7 @@ export function SpeechDNADashboard() {
                           <X size={16} />
                         </button>
                       </div>
-                      <div className="flex-1 overflow-y-auto p-2 max-h-[400px]">
+                      <div className="flex-1 overflow-y-auto p-2 max-h-[600px] md:max-h-[400px]">
                         <div className="space-y-1">
                           {availableSpeeches.map(m => (
                             <button
@@ -1354,7 +1354,7 @@ export function SpeechDNADashboard() {
                         <X size={16} />
                       </button>
                     </div>
-                    <div className="flex-1 overflow-y-auto p-2 max-h-[400px]">
+                    <div className="flex-1 overflow-y-auto p-2 max-h-[600px] md:max-h-[400px]">
                       <div className="space-y-1">
                         {availableSpeeches.map(m => (
                           <button
@@ -2032,7 +2032,7 @@ export function SpeechDNADashboard() {
                   ))}
                 </div>
               </div>
-              <div className="mt-4 grid h-40 grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-4 lg:grid-cols-6">
+              <div className="mt-4 grid h-[400px] md:h-40 grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-4 lg:grid-cols-6">
                 {visibleLibrary.map(m => {
                   const selected = activeIds.includes(m[0]);
                   return (
