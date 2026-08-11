@@ -1191,7 +1191,7 @@ export function SpeechDNADashboard() {
 
   return (
     <main className="min-h-screen bg-gray-100 dark:bg-[#0F172A] text-gray-900 dark:text-slate-100 selection:bg-[#937DF8]/30">
-      <header className="mx-auto max-w-[1500px] px-5 pb-7 pt-8 sm:px-8">
+      <header className="mx-auto max-w-[1500px] px-5 pb-4 pt-8 sm:px-8">
         <div className="flex flex-wrap items-end justify-between gap-5">
           <div>
             <div className="mb-3 flex items-center gap-2 text-[10px] tracking-[.28em] text-gray-500 dark:text-slate-500">
@@ -1202,14 +1202,14 @@ export function SpeechDNADashboard() {
               Presidential Speech DNA
             </h1>
             <p className="mt-4 text-base text-gray-600 dark:text-slate-400 max-w-3xl">
-              Explore the DNA of presidential State of the Union addresses. Hover over a president's
+              Explore the DNA of presidential State of the Union addresses. Click on a president's
               name and select "yes" to discover and compare addresses from other presidents.
             </p>
           </div>
         </div>
       </header>
 
-      <section className="mx-auto max-w-[1500px] px-5 sm:px-8 mt-8">
+      <section className="mx-auto max-w-[1500px] px-5 sm:px-8 mt-4">
         <nav aria-label="Global theme filter" className="flex flex-wrap gap-2">
           <button
             onClick={() => setFilters([])}
@@ -2376,7 +2376,7 @@ export function SpeechDNADashboard() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
             transition={{ duration: 0.3 }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 md:top-6 md:bottom-auto md:right-6 md:left-auto md:translate-x-0 z-50 w-full max-w-[260px] px-3"
+            className="fixed top-6 right-6 z-50 w-full max-w-[260px] px-3"
           >
             <div className="bg-white dark:bg-slate-800 rounded-lg shadow-2xl border border-gray-200 dark:border-slate-700 p-2">
               <div className="flex items-start justify-between gap-1.5 mb-1">
