@@ -1191,46 +1191,48 @@ export function SpeechDNADashboard() {
 
   return (
     <main className="min-h-screen bg-gray-100 dark:bg-[#0F172A] text-gray-900 dark:text-slate-100 selection:bg-[#937DF8]/30">
-      <header className="relative mx-auto max-w-[1500px] px-5 pb-4 pt-8 sm:px-8 overflow-hidden">
-        {/* Grainy gradient blobs */}
-        <div className="absolute -top-20 -left-20 w-96 h-96 rounded-full opacity-30 dark:opacity-20 blur-3xl" 
+      <div className="relative">
+        {/* Grainy gradient blobs - positioned outside header for full visibility */}
+        <div className="absolute -top-20 left-20 w-96 h-96 rounded-full opacity-30 dark:opacity-20 blur-3xl pointer-events-none" 
           style={{
             background: 'radial-gradient(circle, #667eea 0%, #764ba2 50%, transparent 70%)',
             backgroundImage: `radial-gradient(circle, #667eea 0%, #764ba2 50%, transparent 70%), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n' x='0' y='0'%3E%3CfeTurbulence baseFrequency='0.9' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 0, 0 0 0 0 0, 0 0 0 0 0, 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E")`,
             backgroundBlendMode: 'overlay',
           }}
         />
-        <div className="absolute top-10 right-20 w-80 h-80 rounded-full opacity-30 dark:opacity-20 blur-3xl" 
+        <div className="absolute top-0 right-32 w-80 h-80 rounded-full opacity-30 dark:opacity-20 blur-3xl pointer-events-none" 
           style={{
             background: 'radial-gradient(circle, #f093fb 0%, #f5576c 50%, transparent 70%)',
-            backgroundImage: `radial-gradient(circle, #f093fb 0%, #f5576c 50%, transparent 70%), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n' x='0' y='0'%3E%3CfeTurbulence baseFrequency='0.9' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 0, 0 0 0 0 0, 0 0 0 0 0, 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E")`,
+            backgroundImage: `radial-gradient(circle, #f093fb 0%, #f5576c 50%, transparent 70%), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n2' x='0' y='0'%3E%3CfeTurbulence baseFrequency='0.9' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 0, 0 0 0 0 0, 0 0 0 0 0, 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n2)' opacity='0.4'/%3E%3C/svg%3E")`,
             backgroundBlendMode: 'overlay',
           }}
         />
-        <div className="absolute -bottom-10 left-1/3 w-72 h-72 rounded-full opacity-30 dark:opacity-20 blur-3xl" 
+        <div className="absolute top-32 left-1/2 w-72 h-72 rounded-full opacity-30 dark:opacity-20 blur-3xl pointer-events-none" 
           style={{
             background: 'radial-gradient(circle, #4facfe 0%, #00f2fe 50%, transparent 70%)',
-            backgroundImage: `radial-gradient(circle, #4facfe 0%, #00f2fe 50%, transparent 70%), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n' x='0' y='0'%3E%3CfeTurbulence baseFrequency='0.9' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 0, 0 0 0 0 0, 0 0 0 0 0, 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E")`,
+            backgroundImage: `radial-gradient(circle, #4facfe 0%, #00f2fe 50%, transparent 70%), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n3' x='0' y='0'%3E%3CfeTurbulence baseFrequency='0.9' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 0, 0 0 0 0 0, 0 0 0 0 0, 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n3)' opacity='0.4'/%3E%3C/svg%3E")`,
             backgroundBlendMode: 'overlay',
           }}
         />
         
-        <div className="flex flex-wrap items-end justify-between gap-5 relative z-10">
-          <div>
-            <div className="mb-3 flex items-center gap-2 text-[10px] tracking-[.28em] text-gray-500 dark:text-slate-500">
-              {/* <Activity size={13} className="text-blue-400" /> */}
-              {/* <span>ARCHIVE / ANALYSIS SYSTEM</span> */}
+        <header className="relative mx-auto max-w-[1500px] px-5 pb-4 pt-8 sm:px-8">
+          <div className="flex flex-wrap items-end justify-between gap-5 relative z-10">
+            <div>
+              <div className="mb-3 flex items-center gap-2 text-[10px] tracking-[.28em] text-gray-500 dark:text-slate-500">
+                {/* <Activity size={13} className="text-blue-400" /> */}
+                {/* <span>ARCHIVE / ANALYSIS SYSTEM</span> */}
+              </div>
+              <h1 className="text-4xl font-normal text-gray-900 dark:text-white sm:text-6xl">
+                Presidential Speech DNA
+              </h1>
+              <p className="mt-4 text-base text-gray-600 dark:text-slate-400 max-w-3xl">
+                Explore the DNA of presidential State of the Union addresses. Click on a president's
+                name and select "yes" to discover and compare addresses from other presidents.
+              </p>
             </div>
-            <h1 className="text-4xl font-normal text-gray-900 dark:text-white sm:text-6xl">
-              Presidential Speech DNA
-            </h1>
-            <p className="mt-4 text-base text-gray-600 dark:text-slate-400 max-w-3xl">
-              Explore the DNA of presidential State of the Union addresses. Click on a president's
-              name and select "yes" to discover and compare addresses from other presidents.
-            </p>
           </div>
-        </div>
-      </header>
+        </header>
+      </div>
 
       <section className="mx-auto max-w-[1500px] px-5 sm:px-8 mt-4">
         <nav aria-label="Global theme filter" className="flex flex-wrap gap-2">
