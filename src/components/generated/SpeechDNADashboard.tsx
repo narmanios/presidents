@@ -1191,17 +1191,34 @@ export function SpeechDNADashboard() {
 
   return (
     <main className="min-h-screen bg-gray-100 dark:bg-[#0F172A] text-gray-900 dark:text-slate-100 selection:bg-[#937DF8]/30">
-      <header className="mx-auto max-w-[1500px] px-5 pb-4 pt-8 sm:px-8">
+      <header className="relative mx-auto max-w-[1500px] px-5 pb-4 pt-8 sm:px-8 overflow-visible">
+        {/* Grainy gradient background - full width */}
+        <div className="absolute left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen top-0 bottom-0 -z-10">
+          <div 
+            className="absolute inset-0 opacity-60 dark:opacity-50"
+            style={{
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%)',
+            }}
+          />
+          <div 
+            className="absolute inset-0 opacity-90"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='4' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+              mixBlendMode: 'overlay',
+            }}
+          />
+        </div>
+        
         <div className="flex flex-wrap items-end justify-between gap-5">
           <div>
             <div className="mb-3 flex items-center gap-2 text-[10px] tracking-[.28em] text-gray-500 dark:text-slate-500">
               {/* <Activity size={13} className="text-blue-400" /> */}
               {/* <span>ARCHIVE / ANALYSIS SYSTEM</span> */}
             </div>
-            <h1 className="text-4xl font-normal text-gray-900 dark:text-white sm:text-6xl">
+            <h1 className="text-4xl font-normal text-gray-900 dark:text-white sm:text-6xl relative z-10">
               Presidential Speech DNA
             </h1>
-            <p className="mt-4 text-base text-gray-600 dark:text-slate-400 max-w-3xl">
+            <p className="mt-4 text-base text-gray-600 dark:text-slate-400 max-w-3xl relative z-10">
               Explore the DNA of presidential State of the Union addresses. Click on a president's
               name and select "yes" to discover and compare addresses from other presidents.
             </p>
