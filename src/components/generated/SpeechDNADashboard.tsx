@@ -1265,7 +1265,7 @@ export function SpeechDNADashboard() {
               return (
                 <div
                   key={`empty-${slot}`}
-                  className="relative flex min-h-[500px] md:min-h-[180px] items-center justify-center rounded-md border border-dashed border-gray-300 dark:border-white/15 text-xs text-gray-500 dark:text-slate-500"
+                  className="relative flex min-h-[600px] md:min-h-[180px] items-center justify-center rounded-md border border-dashed border-gray-300 dark:border-white/15 text-xs text-gray-500 dark:text-slate-500"
                 >
                   {!isDropdownOpen ? (
                     <button
@@ -1339,7 +1339,7 @@ export function SpeechDNADashboard() {
             return (
               <article
                 key={speech.presidentId}
-                className={`relative overflow-visible rounded-md bg-white dark:bg-white/[.05] p-4 backdrop-blur-xl sm:p-5 border border-gray-200 dark:border-transparent ${isDropdownOpen ? 'min-h-[500px] md:min-h-0' : ''}`}
+                className={`relative overflow-visible rounded-md bg-white dark:bg-white/[.05] p-4 backdrop-blur-xl sm:p-5 border border-gray-200 dark:border-transparent ${isDropdownOpen ? 'min-h-[600px] md:min-h-0' : ''}`}
               >
                 {isDropdownOpen && (
                   <div className="absolute inset-0 rounded-md border-2 border-[#937DF8]/50 bg-white dark:bg-white/[.08] shadow-xl z-10 flex flex-col">
