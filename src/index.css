@@ -1,9 +1,53 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto+Mono:wght@400;500;600&display=swap');
+/* ============================================
+   PRESIDENTIAL SPEECH DNA - STYLES
+   ============================================
+   
+   This file contains all the colors and styling for the site.
+   
+   TO EDIT COLORS:
+   1. Scroll down to the ":root" section (around line 60)
+   2. Change the hex color values (#000000, #ffffff, etc.)
+   3. Save this file
+   4. Run "npm run build" in your terminal
+   5. Run "npm run deploy" to publish changes
+   
+   IMPORTANT: You must rebuild after changing colors!
+   
+   COLOR GROUPS:
+   - background: Main site background color
+   - foreground: Main text color
+   - gray-XXX: Text and UI element colors
+   - slate-XXX: Alternative gray scale
+   - blue-XXX: Interactive elements and hover states
+   - white-opacity-XX: Transparent overlays for cards and borders
+   
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 @import 'tailwindcss';
 
 @plugin "tailwindcss-animate";
 
 @custom-variant dark (&:is(.dark *));
+
+/* Configure Tailwind to use your custom colors */
+@theme {
+  --color-black: var(--background);
+  --color-white: var(--foreground);
+  --color-gray-300: var(--gray-300);
+  --color-gray-400: var(--gray-400);
+  --color-gray-500: var(--gray-500);
+  --color-gray-700: var(--gray-700);
+  --color-gray-900: var(--gray-900);
+  --color-slate-300: var(--slate-300);
+  --color-slate-400: var(--slate-400);
+  --color-slate-500: var(--slate-500);
+  --color-slate-600: var(--slate-600);
+  --color-blue-400: var(--blue-400);
+  --color-blue-500: var(--blue-500);
+  --color-blue-600: var(--blue-600);
+  --color-blue-700: var(--blue-700);
+}
 
 body {
   margin: 0;
@@ -17,105 +61,63 @@ body {
   overscroll-behavior-x: none;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: 'Inter', sans-serif;
-  --font-body: 'Inter', sans-serif;
-  --font-heading: 'Inter', sans-serif;
-  --font-mono: 'Roboto Mono', monospace;
-  --color-border: var(--border);
-  --color-ring: var(--ring);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-}
-
+/* Site Color Palette - Edit these to change the theme */
 :root {
-  --radius: 0.625rem;
-  --background: oklch(0.985 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: #2196f3;
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.95 0 0);
-  --secondary-foreground: oklch(0.145 0 0);
-  --muted: oklch(0.95 0 0);
-  --muted-foreground: oklch(0.488 0 0);
-  --accent: #673ab7;
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: #e53935;
-  --border: oklch(0 0 0 / 10%);
-  --input: oklch(0 0 0 / 15%);
-  --ring: #673ab7;
-  --chart-1: #4caf50;
-  --chart-2: #2196f3;
-  --chart-3: #e53935;
-  --chart-4: #673ab7;
-  --chart-5: #e91e63;
-  --sidebar: oklch(1 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: #2196f3;
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.95 0 0);
-  --sidebar-accent-foreground: oklch(0.145 0 0);
-  --sidebar-border: oklch(0 0 0 / 10%);
-  --sidebar-ring: #673ab7;
-}
+  /* Main colors */
+  --background: #000000; /* Site background color (currently dark red) */
+  --foreground: #ffffff; /* Main text color */
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: #937df8;
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: #f78ef0;
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: #eb7b77;
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: #98f786;
-  --chart-1: #98f786;
-  --chart-2: #6d9efc;
-  --chart-3: #eb7b77;
-  --chart-4: #937df8;
-  --chart-5: #f78ef0;
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: #937df8;
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: #98f786;
+  /* Gray/Neutral colors for secondary text and UI elements */
+  --gray-300: #d1d5db; /* Light gray text */
+  --gray-400: #9ca3af; /* Medium gray text */
+  --gray-500: #6b7280; /* Darker gray */
+  --gray-700: #374151; /* Very dark gray */
+  --gray-900: #111827; /* Near black */
+
+  /* Slate colors (alternative gray scale) */
+  --slate-300: #cbd5e1;
+  --slate-400: #94a3b8;
+  --slate-500: #64748b;
+  --slate-600: #475569;
+
+  /* Accent colors */
+  --selection-highlight: #937df8; /* Text selection background */
+  --blue-400: #60a5fa; /* Hover states and interactive elements */
+  --blue-500: #3b82f6; /* Primary blue */
+  --blue-600: #2563eb; /* Button backgrounds */
+  --blue-700: #1d4ed8; /* Button hover state */
+
+  /* UI element colors (using opacity for transparency) */
+  --white-opacity-5: rgba(255, 255, 255, 0.05); /* Very subtle backgrounds */
+  --white-opacity-8: rgba(255, 255, 255, 0.08); /* Card backgrounds */
+  --white-opacity-10: rgba(255, 255, 255, 0.1); /* Borders and hover states */
+  --white-opacity-20: rgba(255, 255, 255, 0.2); /* Stronger borders */
+  --white-opacity-30: rgba(255, 255, 255, 0.3); /* Strong borders */
+
+  /* Font families */
+  --font-sans: 'Inter', sans-serif;
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    box-sizing: border-box;
   }
+
   body {
-    @apply bg-background text-foreground;
-    font-family: 'Inter', sans-serif;
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
   }
+
   h1,
   h2,
   h3,
   h4,
   h5,
   h6 {
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-sans);
   }
+
   html,
   body,
   #root {
@@ -125,24 +127,31 @@ body {
     padding: 0;
     overscroll-behavior-x: none;
   }
+
   button,
   input {
     font: inherit;
   }
 }
 
-/* Always-visible scrollbar for the helix columns. macOS overlay scrollbars fade
-   out when idle, which hides the fact that a long speech has more rungs below.
-   `scroll` (not `auto`) keeps the track painted even before the first scroll. */
+/* ===== SCROLLBAR STYLES ===== */
+
+/* Hide scrollbar completely */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Visible scrollbar for helix columns */
 .helix-scroll {
   overflow-y: scroll;
   scrollbar-gutter: stable;
 }
 
-/* Chrome/Safari: styling ::-webkit-scrollbar opts the element out of overlay
-   scrollbars, so the bar is permanently visible and occupies layout space.
-   Chrome >=121 ignores these rules if scrollbar-width/scrollbar-color are also
-   set on the element, so those live in the @supports block below instead. */
+/* Chrome/Safari scrollbar styling */
 .helix-scroll::-webkit-scrollbar {
   width: 10px;
   -webkit-appearance: none;
@@ -162,8 +171,7 @@ body {
   background-clip: content-box;
 }
 
-/* Firefox has no ::-webkit-scrollbar and never overlays, so the standard
-   properties are enough — and safe to set only where webkit rules don't apply. */
+/* Firefox scrollbar styling */
 @supports not selector(::-webkit-scrollbar) {
   .helix-scroll {
     scrollbar-width: thin;
@@ -204,39 +212,5 @@ body {
   }
   .dark .scrollbar-visible {
     scrollbar-color: rgba(148, 163, 184, 0.5) rgba(55, 65, 81, 0.3);
-  }
-}
-
-/* Hide scrollbar completely */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-/* Broken Image Fallback Styles */
-img.broken-image-fallback {
-  position: relative;
-  display: inline-block;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  object-fit: none;
-  object-position: center;
-  animation: fadeIn 0.3s ease-in-out;
-}
-
-.dark img.broken-image-fallback {
-  background: #1f2937;
-  border-color: #374151;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
   }
 }

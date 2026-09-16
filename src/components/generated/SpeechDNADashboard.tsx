@@ -11,6 +11,7 @@ import {
   Command,
   Sparkles,
 } from 'lucide-react';
+import presidentsImagesData from '../../assets/data/presidents_images.json';
 
 // Load all speech text files
 const speechFiles = import.meta.glob<string>('../../assets/data/sotu/*.txt', {
@@ -57,6 +58,8 @@ type RungGeom = {
   y1: number;
   y2: number;
 };
+
+type LibraryMetaEntry = [string, string, string, number, EraId, string, string];
 
 type AnalyzedSpeech = Omit<SpeechEntry, 'paragraphs'> & {
   paragraphs: AnalyzedParagraph[];
@@ -888,10 +891,10 @@ function getFullName(surname: string): string {
 
 // Build library metadata and speech map from actual speech files
 function buildLibraryData(): {
-  libraryMeta: [string, string, string, number, EraId, string, string][];
+  libraryMeta: LibraryMetaEntry[];
   speechesMap: Record<string, string[]>;
 } {
-  const meta: [string, string, string, number, EraId, string, string][] = [];
+  const meta: LibraryMetaEntry[] = [];
   const speechesMap: Record<string, string[]> = {};
 
   Object.entries(speechFiles).forEach(([path, content]) => {
@@ -918,6 +921,83 @@ function buildLibraryData(): {
 }
 
 const { libraryMeta, speechesMap } = buildLibraryData();
+
+function SpeechPickerList({
+  speeches,
+  onSelect,
+}: {
+  speeches: LibraryMetaEntry[];
+  onSelect: (speechId: string) => void;
+}) {
+  const listRef = useRef<HTMLDivElement>(null);
+  const [scrollCue, setScrollCue] = useState({
+    hasOverflow: false,
+    showTop: false,
+    showBottom: false,
+  });
+
+  const updateScrollCue = () => {
+    const element = listRef.current;
+    if (!element) return;
+
+    const maxScrollTop = element.scrollHeight - element.clientHeight;
+    const hasOverflow = maxScrollTop > 8;
+
+    setScrollCue({
+      hasOverflow,
+      showTop: hasOverflow && element.scrollTop > 8,
+      showBottom: hasOverflow && element.scrollTop < maxScrollTop - 8,
+    });
+  };
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(updateScrollCue);
+    window.addEventListener('resize', updateScrollCue);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('resize', updateScrollCue);
+    };
+  }, [speeches]);
+
+  return (
+    <div className="relative flex-1 min-h-0">
+      <div
+        ref={listRef}
+        onScroll={updateScrollCue}
+        className="h-full overflow-y-auto p-4 max-h-[620px] md:max-h-[420px]"
+      >
+        <div className="space-y-2 pb-3">
+          {speeches.map(m => (
+            <button
+              key={m[0]}
+              onClick={() => onSelect(m[0])}
+              className="w-full text-left rounded border border-white/10 bg-white/5 px-3 py-2 transition hover:border-white hover:bg-white/10"
+              style={{ fontFamily: '"Inter", sans-serif' }}
+            >
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="font-medium text-sm text-white">{m[2]}</span>
+                <span className="text-xs text-gray-400 shrink-0">{m[3]}</span>
+              </div>
+              <div className="text-xs text-gray-400 mt-0.5">{m[5]}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {scrollCue.hasOverflow && (
+        <>
+          <div
+            className={`pointer-events-none absolute inset-x-0 top-0 h-6 bg-gradient-to-b from-black via-black/75 to-transparent transition-opacity ${scrollCue.showTop ? 'opacity-100' : 'opacity-0'}`}
+          />
+          <div
+            className={`pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-black/80 via-black/35 to-transparent transition-opacity ${scrollCue.showBottom ? 'opacity-100' : 'opacity-0'}`}
+          />
+        </>
+      )}
+    </div>
+  );
+}
 
 function buildRungs(segments: AnalyzedSegment[]): RungGeom[] {
   return segments.map((segment, i) => {
@@ -1061,8 +1141,54 @@ export function SpeechDNADashboard() {
     visible: boolean;
     themeId: ThemeId | null;
   }>({ visible: false, themeId: null });
+  const [presidentImages, setPresidentImages] = useState<Record<string, string>>({});
 
   const prevExpandedRef = useRef(expanded);
+
+  // Fetch president images from Wikipedia API
+  useEffect(() => {
+    const fetchImages = async () => {
+      const imageMap: Record<string, string> = {};
+
+      for (const speech of active) {
+        if (!speech || presidentImages[speech.presidentId]) continue;
+
+        // Find matching president in the JSON data
+        const presidentData: any = presidentsImagesData.presidents.find(
+          (p: any) => p.surname_in_corpus === speech.surname && p.sotu_years.includes(speech.year)
+        );
+
+        if (presidentData) {
+          // Use direct high-quality image URL if available
+          if (presidentData.direct_image_url) {
+            imageMap[speech.presidentId] = presidentData.direct_image_url;
+          } else if (presidentData.image_api) {
+            // Fall back to API fetch
+            try {
+              const response = await fetch(presidentData.image_api);
+              const data = await response.json();
+
+              // Use thumbnail first (usually ~320px, perfect for 80px display on retina)
+              // Only fall back to originalimage if no thumbnail
+              const imageUrl = data.thumbnail?.source || data.originalimage?.source;
+
+              if (imageUrl) {
+                imageMap[speech.presidentId] = imageUrl;
+              }
+            } catch (error) {
+              console.error(`Failed to fetch image for ${speech.president}:`, error);
+            }
+          }
+        }
+      }
+
+      if (Object.keys(imageMap).length > 0) {
+        setPresidentImages(prev => ({ ...prev, ...imageMap }));
+      }
+    };
+
+    fetchImages();
+  }, [activeIds]);
 
   // The library sits at the bottom of the page, so expanding it would otherwise
   // open below the fold. 'nearest' scrolls the minimum needed to reveal the
@@ -1190,55 +1316,37 @@ export function SpeechDNADashboard() {
     setFilters(f => (f.includes(id) ? f.filter(x => x !== id) : [...f, id]));
 
   return (
-    <main className="min-h-screen bg-gray-100 dark:bg-[#0F172A] text-gray-900 dark:text-slate-100 selection:bg-[#937DF8]/30">
-      <div className="relative">
-        {/* Grainy gradient blobs - positioned outside header for full visibility */}
-        <div className="absolute -top-20 left-20 w-96 h-96 rounded-full opacity-30 dark:opacity-20 blur-3xl pointer-events-none" 
-          style={{
-            background: 'radial-gradient(circle, #667eea 0%, #764ba2 50%, transparent 70%)',
-            backgroundImage: `radial-gradient(circle, #667eea 0%, #764ba2 50%, transparent 70%), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n' x='0' y='0'%3E%3CfeTurbulence baseFrequency='0.9' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 0, 0 0 0 0 0, 0 0 0 0 0, 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E")`,
-            backgroundBlendMode: 'overlay',
-          }}
-        />
-        <div className="absolute top-0 right-32 w-80 h-80 rounded-full opacity-30 dark:opacity-20 blur-3xl pointer-events-none" 
-          style={{
-            background: 'radial-gradient(circle, #f093fb 0%, #f5576c 50%, transparent 70%)',
-            backgroundImage: `radial-gradient(circle, #f093fb 0%, #f5576c 50%, transparent 70%), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n2' x='0' y='0'%3E%3CfeTurbulence baseFrequency='0.9' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 0, 0 0 0 0 0, 0 0 0 0 0, 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n2)' opacity='0.4'/%3E%3C/svg%3E")`,
-            backgroundBlendMode: 'overlay',
-          }}
-        />
-        <div className="absolute top-32 left-1/2 w-72 h-72 rounded-full opacity-30 dark:opacity-20 blur-3xl pointer-events-none" 
-          style={{
-            background: 'radial-gradient(circle, #4facfe 0%, #00f2fe 50%, transparent 70%)',
-            backgroundImage: `radial-gradient(circle, #4facfe 0%, #00f2fe 50%, transparent 70%), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n3' x='0' y='0'%3E%3CfeTurbulence baseFrequency='0.9' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 0, 0 0 0 0 0, 0 0 0 0 0, 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n3)' opacity='0.4'/%3E%3C/svg%3E")`,
-            backgroundBlendMode: 'overlay',
-          }}
-        />
-        
-        <header className="relative mx-auto max-w-[1500px] px-5 pb-4 pt-8 sm:px-8">
-          <div className="flex flex-wrap items-end justify-between gap-5 relative z-10">
-            <div>
-              <div className="mb-3 flex items-center gap-2 text-[10px] tracking-[.28em] text-gray-500 dark:text-slate-500">
-                {/* <Activity size={13} className="text-blue-400" /> */}
-                {/* <span>ARCHIVE / ANALYSIS SYSTEM</span> */}
-              </div>
-              <h1 className="text-4xl font-normal text-gray-900 dark:text-white sm:text-6xl">
-                Presidential Speech DNA
-              </h1>
-              <p className="mt-4 text-base text-gray-600 dark:text-slate-400 max-w-3xl">
-                Explore the DNA of presidential State of the Union addresses. Click on a president's
-                name and select "yes" to discover and compare addresses from other presidents.
-              </p>
+    <main className="min-h-screen bg-black text-white selection:bg-[#937DF8]/30 relative">
+      <header className="relative mx-auto max-w-[1500px] px-6 pb-6 pt-10 sm:px-12 z-20">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <div className="mb-3 flex items-center gap-2 text-[10px] tracking-[.28em] text-gray-400">
+              {/* <Activity size={13} className="text-blue-400" /> */}
+              {/* <span>ARCHIVE / ANALYSIS SYSTEM</span> */}
             </div>
+            <h1
+              className="text-4xl text-white sm:text-6xl"
+              style={{
+                fontFamily: '"Inter", sans-serif',
+                fontOpticalSizing: 'auto',
+                fontWeight: 600,
+              }}
+            >
+              Presidential Speech DNA
+            </h1>
+            <p className="mt-6 text-base text-gray-300 max-w-3xl leading-relaxed">
+              Explore the DNA of presidential State of the Union addresses. Click on a president's
+              name and select "yes" to discover and compare addresses from other presidents.
+            </p>
           </div>
-        </header>
-      </div>
+        </div>
+      </header>
 
-      <section className="mx-auto max-w-[1500px] px-5 sm:px-8 mt-4">
-        <nav aria-label="Global theme filter" className="flex flex-wrap gap-2">
+      <section className="relative mx-auto max-w-[1500px] px-6 sm:px-12 mt-6 z-20">
+        <nav aria-label="Global theme filter" className="flex flex-wrap gap-3">
           <button
             onClick={() => setFilters([])}
-            className={`px-2 py-1 text-xs transition ${filters.length === 0 ? 'text-gray-900 dark:text-white font-semibold' : 'text-gray-500 dark:text-slate-600 hover:text-gray-700 dark:hover:text-slate-400'}`}
+            className={`px-2 py-1 text-xs transition ${filters.length === 0 ? 'text-white font-semibold' : 'text-gray-400 hover:text-white'}`}
           >
             All Themes
           </button>
@@ -1253,7 +1361,7 @@ export function SpeechDNADashboard() {
                   setFactCard({ visible: true, themeId: t.id });
                 }
               }}
-              className={`px-2 py-1 text-xs transition flex items-center gap-1.5 ${filters.includes(t.id) ? 'text-gray-900 dark:text-white font-semibold' : 'text-gray-500 dark:text-slate-600 hover:text-gray-700 dark:hover:text-slate-400'}`}
+              className={`px-2 py-1 text-xs transition flex items-center gap-1.5 ${filters.includes(t.id) ? 'text-white font-semibold' : 'text-gray-400 hover:text-white'}`}
             >
               <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: t.color }} />
               {t.label}
@@ -1261,7 +1369,7 @@ export function SpeechDNADashboard() {
           ))}
           <button
             onClick={() => toggleTheme('other' as any)}
-            className={`px-2 py-1 text-xs transition flex items-center gap-1.5 ${filters.includes('other' as any) ? 'text-gray-900 dark:text-white font-semibold' : 'text-gray-500 dark:text-slate-600 hover:text-gray-700 dark:hover:text-slate-400'}`}
+            className={`px-2 py-1 text-xs transition flex items-center gap-1.5 ${filters.includes('other' as any) ? 'text-white font-semibold' : 'text-gray-400 hover:text-white'}`}
           >
             <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: OTHER_COLOR }} />
             Other
@@ -1269,16 +1377,10 @@ export function SpeechDNADashboard() {
         </nav>
       </section>
 
-      <div className="mx-auto max-w-[1500px] px-5 sm:px-8 mt-8">
-        <p className="mb-1 text-sm text-gray-600 dark:text-slate-400">
-          <span>{active.filter(Boolean).length} of 6 presidents can be viewed at a time</span>
-        </p>
-      </div>
-
       {/* pb-10 matches the comparison section's, so the gap above the chart is
           the same as the gap between the chart and the library below it. */}
-      <section className="mx-auto max-w-[1500px] px-5 pt-5 pb-10 sm:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <section className="mx-auto max-w-[1500px] px-6 pt-6 pb-10 sm:px-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {[0, 1, 2, 3, 4, 5].map(slot => {
             const speech = active[slot];
             if (!speech) {
@@ -1290,7 +1392,7 @@ export function SpeechDNADashboard() {
               return (
                 <div
                   key={`empty-${slot}`}
-                  className="relative flex min-h-[400px] md:min-h-[180px] items-center justify-center rounded-md border border-dashed border-gray-300 dark:border-white/15 text-xs text-gray-500 dark:text-slate-500"
+                  className="relative flex min-h-[400px] md:min-h-[180px] items-center justify-center rounded border border-dashed border-white/20 text-xs text-gray-400"
                 >
                   {!isDropdownOpen ? (
                     <button
@@ -1303,46 +1405,25 @@ export function SpeechDNADashboard() {
                       </span>
                     </button>
                   ) : (
-                    <div className="absolute inset-0 rounded-md border border-[#937DF8]/50 bg-white dark:bg-white/[.08] shadow-xl z-10 flex flex-col">
-                      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-white/10">
-                        <span className="text-sm font-semibold text-gray-700 dark:text-slate-300">
-                          Select Speech
-                        </span>
+                    <div className="absolute inset-0 rounded border-2 border-white/30 bg-black shadow-xl z-10 flex flex-col">
+                      <div className="flex items-center justify-between px-4 py-3 border-b border-white/20">
+                        <span className="text-sm font-semibold text-white">Select Speech</span>
                         <button
                           onClick={() => setDropdownSlot(null)}
-                          className="rounded-lg p-1 text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white"
+                          className="rounded p-1 text-gray-400 hover:bg-white/10 hover:text-white"
                         >
                           <X size={16} />
                         </button>
                       </div>
-                      <div className="flex-1 overflow-y-auto p-2 max-h-[600px] md:max-h-[400px]">
-                        <div className="space-y-1">
-                          {availableSpeeches.map(m => (
-                            <button
-                              key={m[0]}
-                              onClick={() => {
-                                const newIds = [...activeIds];
-                                newIds[slot] = m[0];
-                                setActiveIds(newIds);
-                                setDropdownSlot(null);
-                              }}
-                              className="w-full text-left rounded-lg border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[.02] px-3 py-2 transition hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10"
-                            >
-                              <div className="flex items-baseline justify-between gap-2">
-                                <span className="font-medium text-sm text-gray-900 dark:text-slate-200">
-                                  {m[2]}
-                                </span>
-                                <span className="text-xs text-gray-500 dark:text-slate-500 shrink-0">
-                                  {m[3]}
-                                </span>
-                              </div>
-                              <div className="text-xs text-gray-600 dark:text-slate-500 mt-0.5">
-                                {m[5]}
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
+                      <SpeechPickerList
+                        speeches={availableSpeeches}
+                        onSelect={speechId => {
+                          const newIds = [...activeIds];
+                          newIds[slot] = speechId;
+                          setActiveIds(newIds);
+                          setDropdownSlot(null);
+                        }}
+                      />
                     </div>
                   )}
                 </div>
@@ -1364,65 +1445,67 @@ export function SpeechDNADashboard() {
             return (
               <article
                 key={speech.presidentId}
-                className={`relative overflow-visible rounded-md bg-white dark:bg-white/[.05] p-4 backdrop-blur-xl sm:p-5 border border-gray-200 dark:border-transparent ${isDropdownOpen ? 'min-h-[400px] md:min-h-0' : ''}`}
+                className={`relative overflow-visible rounded bg-white/[.08] p-5 backdrop-blur-xl sm:p-7 ${isDropdownOpen ? 'min-h-[400px] md:min-h-0' : ''}`}
               >
                 {isDropdownOpen && (
-                  <div className="absolute inset-0 rounded-md border-2 border-[#937DF8]/50 bg-white dark:bg-white/[.08] shadow-xl z-10 flex flex-col">
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-white/10">
-                      <span className="text-sm font-semibold text-gray-700 dark:text-slate-300">
-                        Select Speech
-                      </span>
+                  <div className="absolute inset-0 rounded border-2 border-white/30 bg-black shadow-xl z-10 flex flex-col">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-white/20">
+                      <span className="text-sm font-semibold text-white">Select Speech</span>
                       <button
                         onClick={() => setDropdownSlot(null)}
-                        className="rounded-lg p-1 text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white"
+                        className="rounded p-1 text-gray-400 hover:bg-white/10 hover:text-white"
                       >
                         <X size={16} />
                       </button>
                     </div>
-                    <div className="flex-1 overflow-y-auto p-2 max-h-[600px] md:max-h-[400px]">
-                      <div className="space-y-1">
-                        {availableSpeeches.map(m => (
-                          <button
-                            key={m[0]}
-                            onClick={() => {
-                              const newIds = [...activeIds];
-                              newIds[slot] = m[0];
-                              setActiveIds(newIds);
-                              setDropdownSlot(null);
-                            }}
-                            className="w-full text-left rounded-lg border border-gray-200 dark:border-white/5 bg-white dark:bg-white/[.02] px-3 py-2 transition hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10"
-                          >
-                            <div className="flex items-baseline justify-between gap-2">
-                              <span className="font-medium text-sm text-gray-900 dark:text-slate-200">
-                                {m[2]}
-                              </span>
-                              <span className="text-xs text-gray-500 dark:text-slate-500 shrink-0">
-                                {m[3]}
-                              </span>
-                            </div>
-                            <div className="text-xs text-gray-600 dark:text-slate-500 mt-0.5">
-                              {m[5]}
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+                    <SpeechPickerList
+                      speeches={availableSpeeches}
+                      onSelect={speechId => {
+                        const newIds = [...activeIds];
+                        newIds[slot] = speechId;
+                        setActiveIds(newIds);
+                        setDropdownSlot(null);
+                      }}
+                    />
                   </div>
                 )}
                 <div className="flex items-start justify-between">
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
+                      {presidentImages[speech.presidentId] && (
+                        <img
+                          src={presidentImages[speech.presidentId]}
+                          alt={speech.president}
+                          className="w-20 h-20 rounded-full object-cover border-2 border-white/20"
+                          style={{
+                            imageRendering: 'auto',
+                            transform: 'translateZ(0)',
+                            WebkitFontSmoothing: 'antialiased',
+                          }}
+                          loading="eager"
+                        />
+                      )}
                       <div
                         className="relative"
                         onMouseEnter={() => setHoverDialogSlot(slot)}
                         onMouseLeave={() => setHoverDialogSlot(null)}
                       >
-                        <h2 className="text-2xl font-medium text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors underline decoration-1 underline-offset-2">
+                        <h2
+                          className="text-2xl text-white cursor-pointer hover:text-blue-400 transition-colors underline decoration-1 underline-offset-2"
+                          style={{
+                            fontFamily: '"Inter", sans-serif',
+                            fontOpticalSizing: 'auto',
+                            fontWeight: 600,
+                          }}
+                        >
                           {speech.president}
                         </h2>
                         {isHoverDialogOpen && !isDropdownOpen && (
-                          <div className="absolute top-full left-0 z-20 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-gray-200 dark:border-slate-700 p-4 whitespace-nowrap">
-                            <p className="text-sm text-gray-900 dark:text-white mb-3">
+                          <div
+                            className="absolute top-full left-0 z-20 bg-black shadow-xl border-2 border-white p-3 whitespace-nowrap"
+                            style={{ fontFamily: '"Inter", sans-serif' }}
+                          >
+                            <p className="text-sm text-white mb-3">
                               Do you want to pick another president?
                             </p>
                             <div className="flex gap-2">
@@ -1434,13 +1517,15 @@ export function SpeechDNADashboard() {
                                   setHoverDialogSlot(null);
                                   setDropdownSlot(slot);
                                 }}
-                                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-md transition-colors"
+                                className="rounded px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm transition-colors"
+                                style={{ fontFamily: '"Inter", sans-serif' }}
                               >
                                 Yes
                               </button>
                               <button
                                 onClick={() => setHoverDialogSlot(null)}
-                                className="px-4 py-1.5 bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-900 dark:text-white text-sm rounded-md transition-colors"
+                                className="rounded px-3 py-1 bg-white/10 hover:bg-white/20 text-white text-sm transition-colors"
+                                style={{ fontFamily: '"Inter", sans-serif' }}
                               >
                                 No
                               </button>
@@ -1448,18 +1533,16 @@ export function SpeechDNADashboard() {
                           </div>
                         )}
                       </div>
-                      <span className="text-xs text-gray-600 dark:text-slate-400">
-                        {speech.year}
-                      </span>
+                      <span className="text-xs text-gray-400">{speech.year}</span>
                     </div>
-                    <p className="mt-0.5 text-xs text-gray-600 dark:text-slate-500">
+                    <p className="mt-1.5 text-xs text-gray-400">
                       {speech.party}, {eraNames[speech.eraId]}
                     </p>
-                    <p className="text-xs text-gray-600 dark:text-slate-500">
+                    <p className="text-xs text-gray-400 mt-1">
                       {wordCount.toLocaleString()} words · {speech.segments.length} segments
                     </p>
                   </div>
-                  <div className="flex flex-col items-end gap-2">
+                  <div className="flex flex-col items-end gap-3">
                     <button
                       aria-label={`Remove ${speech.president}`}
                       onClick={() => {
@@ -1467,13 +1550,13 @@ export function SpeechDNADashboard() {
                         newIds[slot] = null;
                         setActiveIds(newIds);
                       }}
-                      className="rounded-lg p-1 text-gray-600 dark:text-slate-500 hover:bg-gray-50 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white"
+                      className="rounded p-1 text-gray-400 hover:bg-white/10 hover:text-white"
                     >
                       <X size={15} />
                     </button>
                     <button
                       onClick={() => setExplore(speech)}
-                      className="text-[11px] text-gray-700 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white whitespace-nowrap"
+                      className="text-[11px] text-gray-300 hover:text-white whitespace-nowrap"
                     >
                       Read Speech
                     </button>
@@ -1484,7 +1567,7 @@ export function SpeechDNADashboard() {
                   ref={el => {
                     scrollContainerRefs.current[speech.presidentId] = el;
                   }}
-                  className="relative mt-2 mb-1 flex items-center justify-start h-[240px] overflow-x-auto overflow-y-visible no-scrollbar py-8"
+                  className="relative mt-4 mb-3 flex items-center justify-start h-[240px] overflow-x-auto overflow-y-visible no-scrollbar py-8"
                   onScroll={e => {
                     const target = e.currentTarget;
                     setMinimapState(prev => ({
@@ -1616,9 +1699,9 @@ export function SpeechDNADashboard() {
                           style={{
                             cursor: matches ? 'pointer' : 'default',
                             transition: 'all .2s ease-out',
+                            transformOrigin: `${r.x}px ${HORIZONTAL_HELIX_HEIGHT / 2}px`,
                           }}
                           transform={`scale(${scale})`}
-                          transform-origin={`${r.x} ${HORIZONTAL_HELIX_HEIGHT / 2}`}
                         >
                           {/* Invisible larger hit area for easier hovering */}
                           <rect
@@ -1691,7 +1774,7 @@ export function SpeechDNADashboard() {
                       >
                         <svg
                           viewBox={`0 0 ${minimapWidth} ${minimapHeight}`}
-                          className="w-full h-full cursor-pointer rounded border border-gray-300 dark:border-white/10 bg-gray-50 dark:bg-white/[.02]"
+                          className="w-full h-full cursor-pointer border border-gray-300 dark:border-white/10 bg-gray-50 dark:bg-white/[.02]"
                           onClick={handleMinimapInteraction}
                         >
                           {/* Miniature rungs */}
@@ -1729,7 +1812,7 @@ export function SpeechDNADashboard() {
                         </svg>
                         {/* Viewport indicator */}
                         <div
-                          className="absolute top-0 bottom-0 border-2 border-blue-500 dark:border-blue-400 bg-blue-500/20 dark:bg-blue-400/20 cursor-grab active:cursor-grabbing rounded transition-all duration-75 select-none"
+                          className="absolute top-0 bottom-0 border-2 border-blue-500 dark:border-blue-400 bg-blue-500/20 dark:bg-blue-400/20 cursor-grab active:cursor-grabbing transition-all duration-75 select-none"
                           style={{
                             left: `${viewportX}px`,
                             width: `${viewportWidth}px`,
@@ -1744,12 +1827,12 @@ export function SpeechDNADashboard() {
                   );
                 })()}
 
-                <div className="mt-3 flex items-end gap-4">
+                <div className="mt-5 flex items-end gap-6">
                   <div className="flex-1">
-                    <div className="text-xs text-gray-700 dark:text-slate-400 font-medium mb-1">
+                    <div className="text-xs text-gray-700 dark:text-slate-400 font-medium mb-2">
                       Top themes:
                     </div>
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-3">
                       {speech.topThemes.map(t => (
                         <div
                           key={t.themeId}
@@ -1768,7 +1851,7 @@ export function SpeechDNADashboard() {
                   </div>
 
                   <div className="relative w-48 shrink-0">
-                    <div className="flex h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-white/5">
+                    <div className="flex h-2 overflow-hidden rounded-sm bg-gray-200 dark:bg-white/5">
                       {speech.tallies.map(t => {
                         const foundTheme = THEMES.find(x => x.id === t.themeId);
                         const percentage = (t.count / Math.max(speech.paragraphs.length, 1)) * 100;
@@ -1831,8 +1914,8 @@ export function SpeechDNADashboard() {
                             (otherCount / Math.max(speech.paragraphs.length, 1)) * 100;
                           return (
                             <div
-                              className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1.5 bg-gray-900 dark:bg-gray-800 text-white text-xs rounded shadow-xl whitespace-nowrap pointer-events-none"
-                              style={{ zIndex: 10001 }}
+                              className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 rounded bg-black border border-white text-white text-xs shadow-xl whitespace-nowrap pointer-events-none"
+                              style={{ zIndex: 10001, fontFamily: '"Inter", sans-serif' }}
                             >
                               <div className="font-medium">{speech.surname}</div>
                               <div className="text-gray-300">{wordCount} words</div>
@@ -1848,8 +1931,8 @@ export function SpeechDNADashboard() {
                             (t!.count / Math.max(speech.paragraphs.length, 1)) * 100;
                           return (
                             <div
-                              className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1.5 bg-gray-900 dark:bg-gray-800 text-white text-xs rounded shadow-xl whitespace-nowrap pointer-events-none"
-                              style={{ zIndex: 10001 }}
+                              className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 rounded bg-black border border-white text-white text-xs shadow-xl whitespace-nowrap pointer-events-none"
+                              style={{ zIndex: 10001, fontFamily: '"Inter", sans-serif' }}
                             >
                               <div className="font-medium">{speech.surname}</div>
                               <div className="text-gray-300">{wordCount} words</div>
@@ -1868,12 +1951,19 @@ export function SpeechDNADashboard() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-[1500px] px-5 pb-10 sm:px-8">
-        <div className="rounded-md bg-white dark:bg-[#1E293B]/60 p-5 sm:p-7 border border-gray-200 dark:border-transparent">
-          <div className="flex flex-wrap items-end justify-between gap-4">
+      <section className="mx-auto max-w-[1500px] px-6 pb-10 sm:px-12">
+        <div className="rounded bg-white/[.08] p-6 sm:p-8">
+          <div className="flex flex-wrap items-end justify-between gap-5">
             <div>
-              <p className="text-xs text-gray-600 dark:text-slate-500">Cross-Speech Analysis</p>
-              <h2 className="mt-1 text-2xl font-normal text-gray-900 dark:text-white">
+              <p className="text-xs text-gray-400">Cross-Speech Analysis</p>
+              <h2
+                className="mt-2 text-2xl text-white"
+                style={{
+                  fontFamily: '"Inter", sans-serif',
+                  fontOpticalSizing: 'auto',
+                  fontWeight: 600,
+                }}
+              >
                 Theme Frequency Comparison
               </h2>
             </div>
@@ -1883,7 +1973,7 @@ export function SpeechDNADashboard() {
                 .map((s, idx) => (
                   <span
                     key={s.presidentId}
-                    className="text-sm text-gray-600 dark:text-slate-400 flex items-center gap-1.5"
+                    className="text-sm text-gray-300 flex items-center gap-1.5"
                   >
                     <span className="text-xs">{idx + 1}.</span>
                     <span>
@@ -1894,10 +1984,10 @@ export function SpeechDNADashboard() {
                 ))}
             </div>
           </div>
-          <div className="mt-12 grid grid-cols-9 gap-2 border-b border-gray-300 dark:border-white/10 pb-2 relative">
+          <div className="mt-16 grid grid-cols-9 gap-4 border-b border-gray-300 dark:border-white/10 pb-3 relative">
             {THEMES.map(t => (
-              <div key={t.id} className="flex h-56 flex-col justify-end gap-1 relative">
-                <div className="flex h-full items-end justify-center gap-0.5">
+              <div key={t.id} className="flex h-56 flex-col justify-end gap-2 relative">
+                <div className="flex h-full items-end justify-center gap-1">
                   {active
                     .filter((s): s is AnalyzedSpeech => s !== null)
                     .map((s, idx) => {
@@ -1915,7 +2005,7 @@ export function SpeechDNADashboard() {
                           key={s.presidentId}
                           onMouseEnter={() => setHoveredBar({ themeId: t.id, speechIdx: idx })}
                           onMouseLeave={() => setHoveredBar(null)}
-                          className="relative w-full max-w-2 rounded-t-sm cursor-pointer transition-opacity hover:opacity-80"
+                          className="relative w-full max-w-2 rounded-t cursor-pointer transition-opacity hover:opacity-80"
                           style={{
                             height: `${Math.min(100, Math.max(2, percentage * 4))}%`,
                             backgroundColor: barColor,
@@ -1924,8 +2014,8 @@ export function SpeechDNADashboard() {
                         >
                           {isHovered && (
                             <div
-                              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-2 py-1.5 bg-gray-900 dark:bg-gray-800 text-white text-xs rounded shadow-xl whitespace-nowrap pointer-events-none"
-                              style={{ zIndex: 10001 }}
+                              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-2 py-1 rounded bg-black border border-white text-white text-xs shadow-xl whitespace-nowrap pointer-events-none"
+                              style={{ zIndex: 10001, fontFamily: '"Inter", sans-serif' }}
                             >
                               <div className="font-medium">
                                 {idx + 1}. {s.surname}
@@ -1973,7 +2063,7 @@ export function SpeechDNADashboard() {
                         key={s.presidentId}
                         onMouseEnter={() => setHoveredBar({ themeId: 'other', speechIdx: idx })}
                         onMouseLeave={() => setHoveredBar(null)}
-                        className="relative w-full max-w-2 rounded-t-sm cursor-pointer transition-opacity hover:opacity-80"
+                        className="relative w-full max-w-2 rounded-t cursor-pointer transition-opacity hover:opacity-80"
                         style={{
                           height: `${Math.min(100, Math.max(2, percentage * 4))}%`,
                           backgroundColor: barColor,
@@ -1982,8 +2072,8 @@ export function SpeechDNADashboard() {
                       >
                         {isHovered && (
                           <div
-                            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-2 py-1.5 bg-gray-900 dark:bg-gray-800 text-white text-xs rounded shadow-xl whitespace-nowrap pointer-events-none"
-                            style={{ zIndex: 10001 }}
+                            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-2 py-1 rounded bg-black border border-white text-white text-xs shadow-xl whitespace-nowrap pointer-events-none"
+                            style={{ zIndex: 10001, fontFamily: '"Inter", sans-serif' }}
                           >
                             <div className="font-medium">
                               {idx + 1}. {s.surname}
@@ -2006,11 +2096,11 @@ export function SpeechDNADashboard() {
         </div>
       </section>
 
-      <section ref={libraryRef} className="mx-auto max-w-[1500px] scroll-mb-5 px-5 pb-10 sm:px-8">
-        <div className="overflow-hidden rounded-md bg-white dark:bg-white/[.035] border border-gray-200 dark:border-transparent">
+      <section ref={libraryRef} className="mx-auto max-w-[1500px] scroll-mb-5 px-6 pb-10 sm:px-12">
+        <div className="overflow-hidden rounded bg-white/[.08]">
           <button
             onClick={() => setExpanded(!expanded)}
-            className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-white/[.04]"
+            className="flex w-full items-center justify-between px-6 py-4 text-left hover:bg-gray-50 dark:hover:bg-white/[.04]"
           >
             <span className="flex flex-wrap items-center gap-2">
               <Command size={14} className="text-gray-600 dark:text-slate-500" />
@@ -2028,9 +2118,9 @@ export function SpeechDNADashboard() {
             )}
           </button>
           {expanded && (
-            <div className="border-t border-gray-300 dark:border-white/10 p-4">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-                <label className="relative flex-1">
+            <div className="border-t border-gray-300 dark:border-white/10 p-6">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+                <label className="relative w-full lg:w-auto lg:max-w-xs">
                   <Search
                     size={14}
                     className="absolute left-3 top-2.5 text-gray-500 dark:text-slate-500"
@@ -2040,24 +2130,26 @@ export function SpeechDNADashboard() {
                     value={query}
                     onChange={e => setQuery(e.target.value)}
                     placeholder="Search president or year"
-                    className="w-full rounded-lg border border-gray-300 dark:border-white/10 bg-white dark:bg-black/20 py-2 pl-9 pr-3 text-xs text-gray-900 dark:text-slate-100 outline-none focus:border-[#937DF8]"
+                    className="w-full rounded border border-gray-300 dark:border-white/10 bg-white dark:bg-black/20 py-2 pl-9 pr-3 text-xs text-gray-900 dark:text-slate-100 outline-none focus:border-white"
+                    style={{ fontFamily: '"Inter", sans-serif' }}
                   />
                 </label>
-                <div className="flex flex-wrap gap-1">
+                <div className="flex flex-wrap gap-2">
                   {(
                     ['all', 'founding', 'civil', 'progressive', 'modern', 'contemporary'] as const
                   ).map(e => (
                     <button
                       key={e}
                       onClick={() => setEra(e)}
-                      className={`rounded-md px-2 py-2 text-[10px] ${era === e ? 'bg-gray-900 text-white dark:bg-white dark:text-slate-900' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-white/10'}`}
+                      className={`rounded px-3 py-2 text-[10px] border transition ${era === e ? 'border-white bg-white/10 text-white' : 'border-white/10 text-slate-400 hover:border-white/30 hover:bg-white/5'}`}
+                      style={{ fontFamily: '"Inter", sans-serif' }}
                     >
                       {e === 'all' ? 'All' : eraNames[e]}
                     </button>
                   ))}
                 </div>
               </div>
-              <div className="mt-4 grid h-[400px] md:h-40 grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-4 lg:grid-cols-6">
+              <div className="mt-5 grid h-[400px] md:h-40 grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-4 lg:grid-cols-6">
                 {visibleLibrary.map(m => {
                   const selected = activeIds.includes(m[0]);
                   return (
@@ -2066,12 +2158,17 @@ export function SpeechDNADashboard() {
                       onClick={() => {
                         setExplore(ALL_SPEECHES_MAP[m[0]]);
                       }}
-                      className={`rounded-lg border p-2 text-left transition ${selected ? 'border-[#937DF8] dark:border-[#F78EF0] bg-[#937DF8]/10 dark:bg-white/10' : 'border-gray-300 dark:border-white/5 bg-white dark:bg-black/10 hover:border-gray-400 dark:hover:border-white/20'}`}
+                      className={`rounded border p-3 text-left transition ${selected ? 'border-white bg-white/10' : 'border-white/5 bg-black/10 hover:border-white/20'}`}
+                      style={{ fontFamily: '"Inter", sans-serif' }}
                     >
-                      <span className="block text-sm text-gray-900 dark:text-slate-300">
+                      <span
+                        className={`block text-sm ${selected ? 'text-white' : 'text-slate-300'}`}
+                      >
                         {m[2]}
                       </span>
-                      <span className="text-xs text-gray-600 dark:text-slate-500">
+                      <span
+                        className={`text-xs mt-1 block ${selected ? 'text-gray-300' : 'text-slate-500'}`}
+                      >
                         {m[3]}, {m[5]}
                       </span>
                     </button>
@@ -2100,11 +2197,12 @@ export function SpeechDNADashboard() {
             transition={{
               duration: 0.1,
             }}
-            className="pointer-events-none fixed rounded shadow-xl bg-gray-900 dark:bg-gray-800 px-2 py-1.5 text-xs text-white whitespace-nowrap"
+            className="pointer-events-none fixed shadow-xl bg-black border border-white px-2 py-1 text-xs text-white whitespace-nowrap"
             style={{
               zIndex: 10001,
               left: Math.min(hover.x + 14, window.innerWidth - 340),
               top: Math.min(hover.y + 14, window.innerHeight - 150),
+              fontFamily: '"Inter", sans-serif',
             }}
           >
             <div className="max-w-xs whitespace-normal leading-relaxed mb-1.5">
@@ -2166,17 +2264,18 @@ export function SpeechDNADashboard() {
               transition={{
                 duration: 0.15,
               }}
-              className="fixed rounded shadow-xl bg-gray-900 dark:bg-gray-800 px-3 py-2 text-xs text-white"
+              className="fixed shadow-xl bg-black border border-white px-3 py-2 text-xs text-white"
               style={{
                 zIndex: 10001,
                 left: Math.min(Math.max(clicked.x - 150, 20), window.innerWidth - 340),
                 top: Math.min(Math.max(clicked.y - 80, 20), window.innerHeight - 200),
                 maxWidth: '300px',
+                fontFamily: '"Inter", sans-serif',
               }}
             >
               <button
                 onClick={() => setClicked(null)}
-                className="absolute right-1.5 top-1.5 rounded p-1 text-gray-300 hover:bg-white/10 hover:text-white"
+                className="absolute right-1.5 top-1.5 p-1 text-gray-300 hover:bg-white/10 hover:text-white"
                 aria-label="Close tooltip"
               >
                 <X size={14} />
@@ -2231,7 +2330,8 @@ export function SpeechDNADashboard() {
               transition={{
                 duration: 0.2,
               }}
-              className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-md bg-white text-gray-900"
+              className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden bg-white text-gray-900"
+              style={{ fontFamily: '"Inter", sans-serif' }}
             >
               <header className="flex flex-shrink-0 items-center justify-between border-b border-gray-200 p-5">
                 <div>
@@ -2251,7 +2351,7 @@ export function SpeechDNADashboard() {
                     setParagraphHover(null);
                     setParagraphClicked(null);
                   }}
-                  className="rounded-full p-2 hover:bg-gray-100"
+                  className="p-2 hover:bg-gray-100"
                 >
                   <X size={18} />
                 </button>
@@ -2403,21 +2503,24 @@ export function SpeechDNADashboard() {
             transition={{ duration: 0.3 }}
             className="fixed top-6 right-6 z-50 w-full max-w-[260px] px-3"
           >
-            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-2xl border border-gray-200 dark:border-slate-700 p-2">
+            <div className="rounded bg-black shadow-2xl border-2 border-white p-2">
               <div className="flex items-start justify-between gap-1.5 mb-1">
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                <h3
+                  className="text-sm font-semibold text-white"
+                  style={{ fontFamily: '"Inter", sans-serif' }}
+                >
                   Interesting detail
                 </h3>
                 <button
                   onClick={() => setFactCard({ visible: false, themeId: null })}
-                  className="rounded p-0.5 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+                  className="rounded p-0.5 hover:bg-white/10 transition-colors"
                   aria-label="Close"
                 >
-                  <X size={14} className="text-gray-500 dark:text-slate-400" />
+                  <X size={14} className="text-gray-400" />
                 </button>
               </div>
               <div className="space-y-1.5">
-                <p className="text-[11px] leading-tight text-gray-600 dark:text-slate-400">
+                <p className="text-[11px] leading-tight text-gray-300">
                   Most SOTU focus on{' '}
                   <span
                     className="font-semibold"
@@ -2431,25 +2534,26 @@ export function SpeechDNADashboard() {
                   {topPresidentsByTheme[factCard.themeId]?.map((pres, idx) => (
                     <div
                       key={pres.name}
-                      className="flex items-center justify-between p-1 rounded bg-gray-50 dark:bg-slate-900/50"
+                      className="flex items-center justify-between p-2 rounded bg-white/5 border border-white/10"
+                      style={{ fontFamily: '"Inter", sans-serif' }}
                     >
-                      <div className="flex items-center gap-1">
-                        <span className="text-[10px] font-bold text-gray-400 dark:text-slate-600 w-2.5">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-bold text-gray-500 w-2.5">
                           {idx + 1}.
                         </span>
-                        <span className="text-[11px] font-medium text-gray-900 dark:text-white truncate">
+                        <span className="text-[11px] font-medium text-white truncate">
                           {pres.name}
                         </span>
                       </div>
-                      <div className="text-right ml-1 shrink-0">
-                        <div className="text-[11px] font-semibold text-gray-900 dark:text-white">
+                      <div className="text-right ml-2 shrink-0">
+                        <div className="text-[11px] font-semibold text-white">
                           {pres.percentage.toFixed(0)}%
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
-                <p className="text-[9px] leading-tight text-gray-500 dark:text-slate-500 italic mt-1 pt-1 border-t border-gray-200 dark:border-slate-700">
+                <p className="text-[9px] leading-relaxed text-gray-400 italic mt-2 pt-2 border-t border-white/20">
                   % of their State of the Union addresses on this topic, not their overall policy
                   impact or legislative achievements
                 </p>
